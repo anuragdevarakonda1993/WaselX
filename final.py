@@ -1,171 +1,126 @@
 """
-WaselX Express — Interactive DSA Visualizer
+WaselX Express — Professional DSA Prototype
 MAIB Final Project | Data Structures & Algorithms
-Upload this single file to GitHub and connect to Streamlit Cloud.
 
-Requirements (requirements.txt):
-    streamlit>=1.32.0
-    plotly>=5.18.0
-    networkx>=3.2.0
+AI-assisted cleanup/refactor note:
+This file was cleaned and reorganized with ChatGPT assistance for debugging,
+structure, and readability. The team must review, understand, and be able to
+explain every section before submission.
+
+Deployment:
+    streamlit run final_cleaned.py
+
+Self-test without Streamlit/Plotly installed:
+    python final_cleaned.py --self-test
 """
 
-import streamlit as st
-import plotly.graph_objects as go
-import plotly.express as px
-import networkx as nx
-import heapq
-import time
+from __future__ import annotations
+
 import random
-from collections import deque
-import math
+import sys
+import time
+from dataclasses import dataclass
+from math import ceil, log2, isinf
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-# ─── PAGE CONFIG ────────────────────────────────────────────────────────────
-st.set_page_config(
-    page_title="WaselX Express — DSA Visualizer",
-    page_icon="🚚",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
+# =============================================================================
+# BUSINESS DATA FROM THE FINAL PROJECT BRIEF
+# =============================================================================
 
-# ─── CUSTOM CSS ─────────────────────────────────────────────────────────────
-st.markdown("""
-<style>
-  [data-testid="stSidebar"] { background: #0f1c2e; }
-  [data-testid="stSidebar"] * { color: #e0eaf8 !important; }
-  .main-title {
-    background: linear-gradient(135deg, #1F4E79 0%, #2E75B6 100%);
-    padding: 24px 32px; border-radius: 12px; margin-bottom: 20px;
-    color: white; text-align: center;
-  }
-  .metric-card {
-    background: linear-gradient(135deg, #1F4E79, #2E75B6);
-    border-radius: 10px; padding: 16px; color: white; text-align: center;
-    margin: 4px;
-  }
-  .metric-card h2 { margin: 0; font-size: 2rem; }
-  .metric-card p  { margin: 4px 0 0; opacity: 0.85; font-size: 0.85rem; }
-  .step-box {
-    background: #f0f6ff; border-left: 4px solid #2E75B6;
-    border-radius: 6px; padding: 10px 14px; margin: 6px 0;
-    font-family: monospace; font-size: 0.88rem;
-  }
-  .highlight-box {
-    background: #e8f4e8; border-left: 4px solid #28a745;
-    border-radius: 6px; padding: 10px 14px; margin: 6px 0;
-  }
-  .warn-box {
-    background: #fff8e1; border-left: 4px solid #ffc107;
-    border-radius: 6px; padding: 10px 14px; margin: 6px 0;
-  }
-  div[data-testid="stTabs"] button { font-weight: 600; }
-</style>
-""", unsafe_allow_html=True)
+NODES: List[str] = [
+    "H1", "H2", "H3", "H4", "H5", "H6", "H7",
+    "D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8",
+]
 
-# ═══════════════════════════════════════════════════════════════════════════
-# DATA
-# ═══════════════════════════════════════════════════════════════════════════
-NODES = ['H1','H2','H3','H4','H5','H6','H7','D1','D2','D3','D4','D5','D6','D7','D8']
-
-NODE_INFO = {
-    'H1': ('Dubai Marina Hub',       'Hub',           'Dubai',     450, 25.0807, 55.1332),
-    'H2': ('Business Bay Hub',       'Hub',           'Dubai',     520, 25.1851, 55.2795),
-    'H3': ('Deira Hub',              'Hub',           'Dubai',     380, 25.2697, 55.3095),
-    'H4': ('JLT Hub',                'Hub',           'Dubai',     290, 25.0657, 55.1453),
-    'H5': ('Abu Dhabi Corniche Hub', 'Hub',           'Abu Dhabi', 410, 24.4667, 54.3667),
-    'H6': ('Khalifa City Hub',       'Hub',           'Abu Dhabi', 310, 24.4215, 54.4860),
-    'H7': ('Sharjah Al Nahda Hub',   'Hub',           'Sharjah',   340, 25.3283, 55.4119),
-    'D1': ('Downtown Dubai',         'Delivery Zone', 'Dubai',     280, 25.1972, 55.2744),
-    'D2': ('Al Quoz Industrial',     'Delivery Zone', 'Dubai',     150, 25.1380, 55.2220),
-    'D3': ('Jumeirah',               'Delivery Zone', 'Dubai',     200, 25.1298, 55.1882),
-    'D4': ('Silicon Oasis',          'Delivery Zone', 'Dubai',     180, 25.1190, 55.3796),
-    'D5': ('Ajman City Centre',      'Delivery Zone', 'Ajman',     130, 25.4106, 55.4354),
-    'D6': ('Yas Island',             'Delivery Zone', 'Abu Dhabi', 160, 24.4674, 54.6074),
-    'D7': ('Al Reem Island',         'Delivery Zone', 'Abu Dhabi', 220, 24.4972, 54.4034),
-    'D8': ('Muwaileh (Univ. City)',  'Delivery Zone', 'Sharjah',   190, 25.3170, 55.5040),
+# id: name, type, emirate, daily_orders, latitude, longitude
+NODE_INFO: Dict[str, Tuple[str, str, str, int, float, float]] = {
+    "H1": ("Dubai Marina Hub", "Hub", "Dubai", 450, 25.0807, 55.1332),
+    "H2": ("Business Bay Hub", "Hub", "Dubai", 520, 25.1851, 55.2795),
+    "H3": ("Deira Hub", "Hub", "Dubai", 380, 25.2697, 55.3095),
+    "H4": ("JLT Hub", "Hub", "Dubai", 290, 25.0657, 55.1453),
+    "H5": ("Abu Dhabi Corniche Hub", "Hub", "Abu Dhabi", 410, 24.4667, 54.3667),
+    "H6": ("Khalifa City Hub", "Hub", "Abu Dhabi", 310, 24.4215, 54.4860),
+    "H7": ("Sharjah Al Nahda Hub", "Hub", "Sharjah", 340, 25.3283, 55.4119),
+    "D1": ("Downtown Dubai", "Delivery Zone", "Dubai", 280, 25.1972, 55.2744),
+    "D2": ("Al Quoz Industrial", "Delivery Zone", "Dubai", 150, 25.1380, 55.2220),
+    "D3": ("Jumeirah", "Delivery Zone", "Dubai", 200, 25.1298, 55.1882),
+    "D4": ("Silicon Oasis", "Delivery Zone", "Dubai", 180, 25.1190, 55.3796),
+    "D5": ("Ajman City Centre", "Delivery Zone", "Ajman", 130, 25.4106, 55.4354),
+    "D6": ("Yas Island", "Delivery Zone", "Abu Dhabi", 160, 24.4674, 54.6074),
+    "D7": ("Al Reem Island", "Delivery Zone", "Abu Dhabi", 220, 24.4972, 54.4034),
+    "D8": ("Muwaileh (University City)", "Delivery Zone", "Sharjah", 190, 25.3170, 55.5040),
 }
 
-EDGES = [
-    ('H1','H4','Sheikh Zayed Rd',    5, 10, 3.5),
-    ('H1','D3','Jumeirah Beach Rd',  4, 12, 3.0),
-    ('H1','D1','Al Khail Rd',        8, 15, 5.5),
-    ('H4','D2','Hessa St',           6, 14, 4.0),
-    ('H4','H2','Sheikh Zayed Rd',    7, 13, 5.0),
-    ('H2','D1','Financial Centre Rd',3,  8, 2.5),
-    ('H2','H3','Al Maktoum Bridge',  9, 18, 6.0),
-    ('H3','D4','Dubai-Al Ain Rd',   12, 22, 8.0),
-    ('H3','H7','Emirates Rd',       15, 25,10.0),
-    ('H7','D8','University Rd',      4,  8, 3.0),
-    ('H7','D5','Sheikh Mohammed Rd',10, 18, 7.0),
-    ('D1','D3','2nd December St',    5, 11, 3.5),
-    ('D1','D2','Al Khail Rd',        6, 13, 4.0),
-    ('D2','D4','Hatta Rd',          10, 20, 7.0),
-    ('H5','D7','Corniche Rd',        6, 12, 4.0),
-    ('H5','H6','Abu Dhabi Ring Rd', 14, 20, 9.0),
-    ('H6','D6','Yas Connector',      8, 15, 5.5),
-    ('D6','D7','Al Saadiyat Bridge', 7, 13, 5.0),
-    ('H5','D6','Island Bypass',     12, 22, 8.0),
-    ('D4','D8','Academic City Rd',  18, 30,12.0),
-    ('H3','D2','Al Asayel St',       8, 16, 5.5),
-    ('H1','H2','Happiness St',      10, 18, 7.0),
-    ('D5','D8','Sharjah Ring Rd',    8, 15, 5.5),
-    ('H6','D7','Reem Bridge',       10, 18, 7.0),
+# from, to, road, distance_km, time_min, cost_aed
+EDGES: List[Tuple[str, str, str, float, float, float]] = [
+    ("H1", "H4", "Sheikh Zayed Rd", 5, 10, 3.5),
+    ("H1", "D3", "Jumeirah Beach Rd", 4, 12, 3.0),
+    ("H1", "D1", "Al Khail Rd", 8, 15, 5.5),
+    ("H4", "D2", "Hessa St", 6, 14, 4.0),
+    ("H4", "H2", "Sheikh Zayed Rd", 7, 13, 5.0),
+    ("H2", "D1", "Financial Centre Rd", 3, 8, 2.5),
+    ("H2", "H3", "Al Maktoum Bridge", 9, 18, 6.0),
+    ("H3", "D4", "Dubai-Al Ain Rd", 12, 22, 8.0),
+    ("H3", "H7", "Emirates Rd", 15, 25, 10.0),
+    ("H7", "D8", "University Rd", 4, 8, 3.0),
+    ("H7", "D5", "Sheikh Mohammed Rd", 10, 18, 7.0),
+    ("D1", "D3", "2nd December St", 5, 11, 3.5),
+    ("D1", "D2", "Al Khail Rd", 6, 13, 4.0),
+    ("D2", "D4", "Hatta Rd", 10, 20, 7.0),
+    ("H5", "D7", "Corniche Rd", 6, 12, 4.0),
+    ("H5", "H6", "Abu Dhabi Ring Rd", 14, 20, 9.0),
+    ("H6", "D6", "Yas Connector", 8, 15, 5.5),
+    ("D6", "D7", "Al Saadiyat Bridge", 7, 13, 5.0),
+    ("H5", "D6", "Island Bypass", 12, 22, 8.0),
+    ("D4", "D8", "Academic City Rd", 18, 30, 12.0),
+    ("H3", "D2", "Al Asayel St", 8, 16, 5.5),
+    ("H1", "H2", "Happiness St", 10, 18, 7.0),
+    ("D5", "D8", "Sharjah Ring Rd", 8, 15, 5.5),
+    ("H6", "D7", "Reem Bridge", 10, 18, 7.0),
 ]
 
-# UAE-style coordinate positions (lon, lat scaled for visual layout)
-POS = {n: (NODE_INFO[n][5], NODE_INFO[n][4]) for n in NODES}
-
-EMIRATE_COLORS = {'Dubai':'#2E75B6','Abu Dhabi':'#C55A11','Sharjah':'#375623','Ajman':'#7030A0'}
-NODE_COLORS = {n: EMIRATE_COLORS.get(NODE_INFO[n][2], '#888') for n in NODES}
+POS: Dict[str, Tuple[float, float]] = {node: (NODE_INFO[node][5], NODE_INFO[node][4]) for node in NODES}
+EMIRATE_COLORS = {
+    "Dubai": "#2E75B6",
+    "Abu Dhabi": "#C55A11",
+    "Sharjah": "#375623",
+    "Ajman": "#7030A0",
+}
 
 TEAM_MEMBERS = [
-    "Anurag Devarakonda", "Anish Borkar", "Nandana Santhosh",
-    "Neha Thapa", "Sarth Malankar",
+    "Anurag Devarakonda",
+    "Anish Borkar",
+    "Nandana Santhosh",
+    "Neha Thapa",
+    "Sarth Malankar",
 ]
 
-# ═══════════════════════════════════════════════════════════════════════════
-# FROM-SCRATCH DATA STRUCTURES (Assignment requires no heapq/deque as primary)
-# ═══════════════════════════════════════════════════════════════════════════
+WEIGHT_INDEX = {"distance": 3, "time": 4, "cost": 5}
+WEIGHT_LABEL = {"distance": "km", "time": "min", "cost": "AED"}
+INF = float("inf")
+
+
+# =============================================================================
+# FROM-SCRATCH DATA STRUCTURES
+# =============================================================================
 
 class MinHeap:
-    """Min-Heap Priority Queue — implemented from scratch (Q14 requirement)."""
-    def __init__(self):
-        self._heap = []
+    """Binary min-heap implemented from scratch, with FIFO tie-breaking."""
+
+    def __init__(self) -> None:
+        self._heap: List[Tuple[Any, ...]] = []
         self._counter = 0
 
-    def _sift_up(self, i):
-        while i > 0:
-            parent = (i - 1) // 2
-            if self._heap[i] < self._heap[parent]:
-                self._heap[i], self._heap[parent] = self._heap[parent], self._heap[i]
-                i = parent
-            else:
-                break
-
-    def _sift_down(self, i):
-        n = len(self._heap)
-        while True:
-            smallest = i
-            left, right = 2 * i + 1, 2 * i + 2
-            if left < n and self._heap[left] < self._heap[smallest]:
-                smallest = left
-            if right < n and self._heap[right] < self._heap[smallest]:
-                smallest = right
-            if smallest != i:
-                self._heap[i], self._heap[smallest] = self._heap[smallest], self._heap[i]
-                i = smallest
-            else:
-                break
-
-    def push(self, priority, name):
-        entry = (priority, self._counter, name)
+    def push(self, priority: float, value: Any, *extra: Any) -> Tuple[Any, ...]:
+        item = (priority, self._counter, value, *extra)
         self._counter += 1
-        self._heap.append(entry)
+        self._heap.append(item)
         self._sift_up(len(self._heap) - 1)
-        return entry
+        return item
 
-    def pop(self):
+    def pop(self) -> Tuple[Any, ...]:
         if not self._heap:
-            raise IndexError("pop from empty heap")
+            raise IndexError("pop from empty MinHeap")
         root = self._heap[0]
         last = self._heap.pop()
         if self._heap:
@@ -173,44 +128,115 @@ class MinHeap:
             self._sift_down(0)
         return root
 
-    def peek(self):
-        if not self._heap:
-            return None
-        return self._heap[0]
+    def peek(self) -> Optional[Tuple[Any, ...]]:
+        return self._heap[0] if self._heap else None
 
-    def __len__(self):
+    def display(self) -> List[Tuple[Any, ...]]:
+        return sorted(self._heap)
+
+    def __len__(self) -> int:
         return len(self._heap)
 
-    def __bool__(self):
-        return len(self._heap) > 0
+    def __bool__(self) -> bool:
+        return bool(self._heap)
 
-    def as_list(self):
-        return list(self._heap)
+    def _sift_up(self, index: int) -> None:
+        while index > 0:
+            parent = (index - 1) // 2
+            if self._heap[index] < self._heap[parent]:
+                self._heap[index], self._heap[parent] = self._heap[parent], self._heap[index]
+                index = parent
+            else:
+                break
 
-    def sorted_view(self):
-        return sorted(self._heap)
+    def _sift_down(self, index: int) -> None:
+        size = len(self._heap)
+        while True:
+            left = 2 * index + 1
+            right = 2 * index + 2
+            smallest = index
+            if left < size and self._heap[left] < self._heap[smallest]:
+                smallest = left
+            if right < size and self._heap[right] < self._heap[smallest]:
+                smallest = right
+            if smallest == index:
+                break
+            self._heap[index], self._heap[smallest] = self._heap[smallest], self._heap[index]
+            index = smallest
+
+
+class SimpleQueue:
+    """FIFO queue implemented with a head pointer, avoiding collections.deque."""
+
+    def __init__(self, initial: Optional[Iterable[Any]] = None) -> None:
+        self._items = list(initial or [])
+        self._head = 0
+
+    def enqueue(self, item: Any) -> None:
+        self._items.append(item)
+
+    def dequeue(self) -> Any:
+        if self._head >= len(self._items):
+            raise IndexError("dequeue from empty queue")
+        item = self._items[self._head]
+        self._head += 1
+        if self._head > 50 and self._head * 2 > len(self._items):
+            self._items = self._items[self._head:]
+            self._head = 0
+        return item
+
+    def display(self) -> List[Any]:
+        return self._items[self._head:]
+
+    def __bool__(self) -> bool:
+        return self._head < len(self._items)
+
+
+class Stack:
+    """LIFO stack used for order lifecycle and DFS."""
+
+    def __init__(self) -> None:
+        self._items: List[Any] = []
+
+    def push(self, item: Any) -> None:
+        self._items.append(item)
+
+    def pop(self) -> Any:
+        if not self._items:
+            raise IndexError("pop from empty stack")
+        return self._items.pop()
+
+    def peek(self) -> Optional[Any]:
+        return self._items[-1] if self._items else None
+
+    def display_top_first(self) -> List[Any]:
+        return list(reversed(self._items))
+
+    def display_bottom_first(self) -> List[Any]:
+        return list(self._items)
+
+    def __len__(self) -> int:
+        return len(self._items)
 
 
 class DLLNode:
-    """Node for Doubly Linked List (Q12 requirement)."""
-    def __init__(self, stop_name, order_id, eta):
+    def __init__(self, stop_name: str, order_id: str, eta: str) -> None:
         self.stop_name = stop_name
         self.order_id = order_id
         self.eta = eta
-        self.prev = None
-        self.next = None
+        self.prev: Optional[DLLNode] = None
+        self.next: Optional[DLLNode] = None
 
 
 class DoublyLinkedList:
-    """Doubly Linked List — from scratch (Q12 requirement)."""
-    def __init__(self):
-        self.head = None
-        self.tail = None
+    def __init__(self) -> None:
+        self.head: Optional[DLLNode] = None
+        self.tail: Optional[DLLNode] = None
         self._size = 0
 
-    def append(self, stop_name, order_id, eta):
+    def append(self, stop_name: str, order_id: str, eta: str) -> DLLNode:
         node = DLLNode(stop_name, order_id, eta)
-        if not self.head:
+        if self.tail is None:
             self.head = self.tail = node
         else:
             node.prev = self.tail
@@ -219,7 +245,7 @@ class DoublyLinkedList:
         self._size += 1
         return node
 
-    def insert_after(self, target_order_id, stop_name, order_id, eta):
+    def insert_after(self, target_order_id: str, stop_name: str, order_id: str, eta: str) -> Optional[DLLNode]:
         cur = self.head
         while cur:
             if cur.order_id == target_order_id:
@@ -236,27 +262,7 @@ class DoublyLinkedList:
             cur = cur.next
         return None
 
-    def insert_at(self, index, stop_name, order_id, eta):
-        if index <= 0:
-            new_node = DLLNode(stop_name, order_id, eta)
-            new_node.next = self.head
-            if self.head:
-                self.head.prev = new_node
-            self.head = new_node
-            if not self.tail:
-                self.tail = new_node
-            self._size += 1
-            return new_node
-        cur = self.head
-        for _ in range(index - 1):
-            if cur is None:
-                break
-            cur = cur.next
-        if cur is None:
-            return self.append(stop_name, order_id, eta)
-        return self.insert_after(cur.order_id, stop_name, order_id, eta)
-
-    def delete_by_order_id(self, order_id):
+    def delete_by_order_id(self, order_id: str) -> Optional[DLLNode]:
         cur = self.head
         while cur:
             if cur.order_id == order_id:
@@ -268,2132 +274,1224 @@ class DoublyLinkedList:
                     cur.next.prev = cur.prev
                 else:
                     self.tail = cur.prev
+                cur.prev = cur.next = None
                 self._size -= 1
                 return cur
             cur = cur.next
         return None
 
-    def delete_at(self, index):
-        cur = self.head
-        for _ in range(index):
-            if cur is None:
-                return None
-            cur = cur.next
-        if cur is None:
-            return None
-        return self.delete_by_order_id(cur.order_id)
-
-    def move_first_to_end(self):
-        if self._size <= 1:
-            return
-        node = self.head
-        self.head = node.next
-        self.head.prev = None
-        node.prev = self.tail
-        node.next = None
-        self.tail.next = node
-        self.tail = node
-
-    def display_forward(self):
-        result = []
+    def display_forward(self) -> List[Tuple[str, str, str]]:
+        out = []
         cur = self.head
         while cur:
-            result.append((cur.stop_name, cur.order_id, cur.eta))
+            out.append((cur.stop_name, cur.order_id, cur.eta))
             cur = cur.next
-        return result
+        return out
 
-    def display_reverse(self):
-        result = []
+    def display_reverse(self) -> List[Tuple[str, str, str]]:
+        out = []
         cur = self.tail
         while cur:
-            result.append((cur.stop_name, cur.order_id, cur.eta))
+            out.append((cur.stop_name, cur.order_id, cur.eta))
             cur = cur.prev
-        return result
+        return out
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self._size
 
 
 class CLLNode:
-    """Node for Circular Linked List (Q13 requirement)."""
-    def __init__(self, rider_name):
+    def __init__(self, rider_name: str) -> None:
         self.rider_name = rider_name
-        self.next = None
+        self.next: Optional[CLLNode] = None
 
 
 class CircularLinkedList:
-    """Circular Linked List — round-robin rider assignment (Q13 requirement)."""
-    def __init__(self):
-        self.tail = None
+    def __init__(self) -> None:
+        self.tail: Optional[CLLNode] = None
+        self.current: Optional[CLLNode] = None
         self._size = 0
-        self._current = None
 
-    def add_rider(self, name):
-        node = CLLNode(name)
-        if not self.tail:
+    def add_rider(self, rider_name: str) -> None:
+        node = CLLNode(rider_name)
+        if self.tail is None:
             node.next = node
             self.tail = node
-            self._current = node
+            self.current = node
         else:
             node.next = self.tail.next
             self.tail.next = node
             self.tail = node
         self._size += 1
 
-    def remove_rider(self, name):
-        if not self.tail:
+    def remove_rider(self, rider_name: str) -> bool:
+        if self.tail is None:
             return False
-        if self._size == 1 and self.tail.rider_name == name:
-            self.tail = None
-            self._current = None
-            self._size = 0
-            return True
-        prev, cur = self.tail, self.tail.next
-        for _ in range(self._size):
-            if cur.rider_name == name:
-                prev.next = cur.next
-                if cur == self.tail:
-                    self.tail = prev
-                if cur == self._current:
-                    self._current = cur.next
-                self._size -= 1
-                return True
-            prev, cur = cur, cur.next
-        return False
-
-    def assign_next_order(self):
-        if not self._current:
-            return None
-        rider = self._current.rider_name
-        self._current = self._current.next
-        return rider
-
-    def display_roster(self):
-        if not self.tail:
-            return []
-        result = []
+        prev = self.tail
         cur = self.tail.next
         for _ in range(self._size):
-            result.append(cur.rider_name)
-            cur = cur.next
-        return result
+            if cur and cur.rider_name == rider_name:
+                if self._size == 1:
+                    self.tail = None
+                    self.current = None
+                else:
+                    prev.next = cur.next
+                    if cur == self.tail:
+                        self.tail = prev
+                    if cur == self.current:
+                        self.current = cur.next
+                self._size -= 1
+                return True
+            prev, cur = cur, cur.next if cur else None
+        return False
 
-
-class Stack:
-    """Stack — order lifecycle tracking (Q15 requirement)."""
-    def __init__(self):
-        self._items = []
-
-    def push(self, item):
-        self._items.append(item)
-
-    def pop(self):
-        if not self._items:
-            raise IndexError("pop from empty stack")
-        return self._items.pop()
-
-    def peek(self):
-        if not self._items:
+    def assign_next_order(self) -> Optional[str]:
+        if self.current is None:
             return None
-        return self._items[-1]
+        rider = self.current.rider_name
+        self.current = self.current.next
+        return rider
 
-    def display(self):
-        return list(reversed(self._items))
-
-    def __len__(self):
-        return len(self._items)
-
-    def __bool__(self):
-        return len(self._items) > 0
-
-    def as_list(self):
-        return list(self._items)
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# GRAPH CLASS
-# ═══════════════════════════════════════════════════════════════════════════
-class WaselGraph:
-    def __init__(self, blocked_edges=None):
-        self.nodes = NODES
-        self.idx = {n: i for i, n in enumerate(NODES)}
-        self.adj = {n: [] for n in NODES}
-        self.blocked = set(blocked_edges or [])
-        for u, v, road, d, t, c in EDGES:
-            key = tuple(sorted([u, v]))
-            if key not in self.blocked:
-                self.adj[u].append((v, d, t, c, road))
-                self.adj[v].append((u, d, t, c, road))
-
-    def dijkstra_animated(self, src, dst, weight='dist'):
-        """Returns list of animation frames for Dijkstra's."""
-        wi = {'dist': 1, 'time': 2, 'cost': 3}[weight]
-        n = len(self.nodes)
-        dist = {nd: float('inf') for nd in self.nodes}
-        prev = {nd: None for nd in self.nodes}
-        dist[src] = 0
-        heap = [(0, src)]
-        visited = set()
-        frames = []  # each frame: (visited_set, dist_dict, current_node, relaxed_edge)
-
-        frames.append({
-            'visited': set(), 'dist': dict(dist), 'current': src,
-            'relaxed': None, 'prev': dict(prev),
-            'msg': f"Start: Initialize all distances to ∞, set dist[{src}] = 0"
-        })
-
-        while heap:
-            d, u = heapq.heappop(heap)
-            if u in visited:
-                continue
-            visited.add(u)
-            frames.append({
-                'visited': set(visited), 'dist': dict(dist), 'current': u,
-                'relaxed': None, 'prev': dict(prev),
-                'msg': f"Visit {u} ({NODE_INFO[u][0]}) — current shortest dist = {d:.1f}"
-            })
-            if u == dst:
+    def display_roster(self) -> List[str]:
+        if self.tail is None:
+            return []
+        roster = []
+        cur = self.tail.next
+        for _ in range(self._size):
+            if cur is None:
                 break
-            for v, ed, et, ec, road in self.adj[u]:
-                if v in visited:
-                    continue
-                w = [ed, ed, et, ec][wi]
-                nd = dist[u] + w
-                if nd < dist[v]:
-                    old = dist[v]
-                    dist[v] = nd
-                    prev[v] = u
-                    heapq.heappush(heap, (nd, v))
-                    frames.append({
-                        'visited': set(visited), 'dist': dict(dist), 'current': u,
-                        'relaxed': (u, v), 'prev': dict(prev),
-                        'msg': f"Relax edge {u}→{v} via {road}: {old:.0f} → {nd:.1f} {'✓ IMPROVED' if old != float('inf') else '✓ FOUND'}"
-                    })
+            roster.append(cur.rider_name)
+            cur = cur.next
+        return roster
 
-        # Reconstruct path
-        path = []
-        cur = dst
-        while cur:
-            path.append(cur)
-            cur = prev[cur]
-        path.reverse()
 
-        return frames, path, dist[dst], prev
+# =============================================================================
+# GRAPH ALGORITHMS
+# =============================================================================
 
-    def bfs_animated(self, src):
-        frames = []
-        visited = []
-        parent = {src: None}
-        queue = deque([src])
-        seen = {src}
-        frames.append({'visited': [], 'queue': [src], 'current': src,
-                       'msg': f"BFS Start from {src}. Queue: [{src}]"})
-        while queue:
-            node = queue.popleft()
-            visited.append(node)
-            neighbors_added = []
-            for nb, *_ in self.adj[node]:
-                if nb not in seen:
-                    seen.add(nb)
-                    parent[nb] = node
-                    queue.append(nb)
-                    neighbors_added.append(nb)
-            frames.append({
-                'visited': list(visited), 'queue': list(queue), 'current': node,
-                'parent': dict(parent),
-                'msg': f"Visit {node} → Added to queue: {neighbors_added or 'none (all neighbors visited)'}"
-            })
-        return frames, visited, parent
+@dataclass(frozen=True)
+class Edge:
+    source: str
+    target: str
+    road: str
+    distance: float
+    time: float
+    cost: float
 
-    def kruskal_animated(self):
-        parent = {n: n for n in self.nodes}
-        rank   = {n: 0 for n in self.nodes}
+    def weight(self, criterion: str) -> float:
+        return {"distance": self.distance, "time": self.time, "cost": self.cost}[criterion]
 
-        def find(x):
-            while parent[x] != x:
-                parent[x] = parent[parent[x]]
-                x = parent[x]
-            return x
+    def key(self) -> Tuple[str, str]:
+        return normalized_edge(self.source, self.target)
 
-        def union(x, y):
-            px, py = find(x), find(y)
-            if px == py: return False
-            if rank[px] < rank[py]: px, py = py, px
-            parent[py] = px
-            if rank[px] == rank[py]: rank[px] += 1
-            return True
 
-        sorted_edges = sorted(EDGES, key=lambda e: e[5])
-        frames = []
-        mst = []
-        total = 0
-        frames.append({'mst': [], 'rejected': [], 'current': None, 'total': 0,
-                       'msg': "Sort all edges by cost. Start adding smallest edges..."})
-        for u, v, road, d, t, c in sorted_edges:
-            key = tuple(sorted([u, v]))
-            if key in self.blocked:
+def normalized_edge(u: str, v: str) -> Tuple[str, str]:
+    return tuple(sorted((u, v)))
+
+
+class WaselGraph:
+    def __init__(self, blocked_edges: Optional[Iterable[Tuple[str, str]]] = None,
+                 extra_edges: Optional[Iterable[Edge]] = None) -> None:
+        self.nodes = list(NODES)
+        self.index = {node: i for i, node in enumerate(self.nodes)}
+        self.blocked = {normalized_edge(u, v) for u, v in (blocked_edges or [])}
+        self.edges: List[Edge] = [Edge(*edge) for edge in EDGES]
+        if extra_edges:
+            self.edges.extend(extra_edges)
+        self.adj: Dict[str, List[Edge]] = {node: [] for node in self.nodes}
+        for edge in self.edges:
+            if edge.key() in self.blocked:
                 continue
-            if union(u, v):
-                mst.append((u, v, road, d, t, c))
-                total += c
-                frames.append({'mst': list(mst), 'rejected': [], 'current': (u, v),
-                               'total': total,
-                               'msg': f"✓ ADD {u}↔{v} ({road}, AED {c}k) — MST total: AED {total:.1f}k"})
-            else:
-                frames.append({'mst': list(mst), 'rejected': [(u, v)], 'current': (u, v),
-                               'total': total,
-                               'msg': f"✗ REJECT {u}↔{v} ({road}) — would create a cycle"})
-        return frames, mst, total
+            self.adj[edge.source].append(edge)
+            self.adj[edge.target].append(Edge(edge.target, edge.source, edge.road, edge.distance, edge.time, edge.cost))
 
-    def floyd_warshall(self, node_subset=None, weight='time'):
-        """Floyd-Warshall all-pairs shortest paths (Q3 requirement)."""
-        wi = {'dist': 1, 'time': 2, 'cost': 3}[weight]
-        nodes = node_subset or self.nodes
-        n = len(nodes)
-        idx = {nd: i for i, nd in enumerate(nodes)}
-        INF = float('inf')
-        dist = [[INF] * n for _ in range(n)]
-        nxt = [[None] * n for _ in range(n)]
+    def neighbors(self, node: str) -> List[Edge]:
+        return self.adj[node]
+
+    def edge_between(self, u: str, v: str) -> Optional[Edge]:
+        for edge in self.adj.get(u, []):
+            if edge.target == v:
+                return edge
+        return None
+
+    def adjacency_list_rows(self) -> List[Dict[str, str]]:
+        rows = []
+        for node in self.nodes:
+            rows.append({
+                "Node": node,
+                "Neighbors": ", ".join(
+                    f"{e.target}(d={e.distance:g}, t={e.time:g}, c={e.cost:g})" for e in self.adj[node]
+                ) or "None",
+            })
+        return rows
+
+    def adjacency_matrix(self, criterion: str = "distance") -> List[List[float]]:
+        size = len(self.nodes)
+        matrix = [[INF for _ in range(size)] for _ in range(size)]
+        for i in range(size):
+            matrix[i][i] = 0
+        for edge in self.edges:
+            if edge.key() in self.blocked:
+                continue
+            i, j = self.index[edge.source], self.index[edge.target]
+            w = edge.weight(criterion)
+            if w < matrix[i][j]:
+                matrix[i][j] = w
+                matrix[j][i] = w
+        return matrix
+
+    def dijkstra(self, source: str, destination: str, criterion: str = "distance") -> Dict[str, Any]:
+        dist = {node: INF for node in self.nodes}
+        prev: Dict[str, Optional[str]] = {node: None for node in self.nodes}
+        visited = set()
+        trace = []
+        heap = MinHeap()
+        dist[source] = 0
+        heap.push(0, source)
+        trace.append({
+            "step": 0,
+            "action": f"Initialize source {source}",
+            "current": source,
+            "visited": [],
+            "distances": dict(dist),
+            "previous": dict(prev),
+        })
+        step = 1
+        while heap:
+            current_distance, _, current = heap.pop()[:3]
+            if current in visited:
+                continue
+            visited.add(current)
+            trace.append({
+                "step": step,
+                "action": f"Visit {current} at {current_distance:g}",
+                "current": current,
+                "visited": sorted(visited),
+                "distances": dict(dist),
+                "previous": dict(prev),
+            })
+            step += 1
+            if current == destination:
+                break
+            for edge in self.neighbors(current):
+                if edge.target in visited:
+                    continue
+                candidate = dist[current] + edge.weight(criterion)
+                if candidate < dist[edge.target]:
+                    old = dist[edge.target]
+                    dist[edge.target] = candidate
+                    prev[edge.target] = current
+                    heap.push(candidate, edge.target)
+                    trace.append({
+                        "step": step,
+                        "action": f"Relax {current}->{edge.target} via {edge.road}: {format_number(old)} -> {candidate:g}",
+                        "current": current,
+                        "relaxed_edge": (current, edge.target),
+                        "visited": sorted(visited),
+                        "distances": dict(dist),
+                        "previous": dict(prev),
+                    })
+                    step += 1
+        path = reconstruct_path(prev, source, destination)
+        return {
+            "path": path,
+            "best": dist[destination],
+            "distances": dist,
+            "previous": prev,
+            "trace": trace,
+            "metrics": self.path_metrics(path),
+        }
+
+    def path_metrics(self, path: List[str]) -> Dict[str, float]:
+        if not path or len(path) == 1:
+            return {"distance": 0.0, "time": 0.0, "cost": 0.0} if path else {"distance": INF, "time": INF, "cost": INF}
+        totals = {"distance": 0.0, "time": 0.0, "cost": 0.0}
+        for u, v in zip(path, path[1:]):
+            edge = self.edge_between(u, v)
+            if edge is None:
+                return {"distance": INF, "time": INF, "cost": INF}
+            totals["distance"] += edge.distance
+            totals["time"] += edge.time
+            totals["cost"] += edge.cost
+        return totals
+
+    def bfs(self, start: str) -> Dict[str, Any]:
+        q = SimpleQueue([start])
+        seen = {start}
+        parent: Dict[str, Optional[str]] = {start: None}
+        order: List[str] = []
+        trace = []
+        while q:
+            node = q.dequeue()
+            order.append(node)
+            added = []
+            for edge in self.neighbors(node):
+                if edge.target not in seen:
+                    seen.add(edge.target)
+                    parent[edge.target] = node
+                    q.enqueue(edge.target)
+                    added.append(edge.target)
+            trace.append({"current": node, "visited": list(order), "queue": q.display(), "added": added})
+        return {"order": order, "parent": parent, "trace": trace, "reachable_all": len(order) == len(self.nodes)}
+
+    def dfs(self, start: str) -> Dict[str, Any]:
+        stack = Stack()
+        stack.push((start, None))
+        seen = set()
+        parent: Dict[str, Optional[str]] = {start: None}
+        order: List[str] = []
+        while len(stack) > 0:
+            node, par = stack.pop()
+            if node in seen:
+                continue
+            seen.add(node)
+            parent.setdefault(node, par)
+            order.append(node)
+            # reversed preserves visible adjacency-list order in iterative DFS
+            for edge in reversed(self.neighbors(node)):
+                if edge.target not in seen:
+                    parent.setdefault(edge.target, node)
+                    stack.push((edge.target, node))
+        return {"order": order, "parent": parent, "reachable_all": len(order) == len(self.nodes)}
+
+    def connected_components(self) -> List[List[str]]:
+        unseen = set(self.nodes)
+        components = []
+        while unseen:
+            start = sorted(unseen)[0]
+            result = self.bfs(start)
+            comp = sorted(result["order"])
+            components.append(comp)
+            unseen -= set(comp)
+        return components
+
+    def floyd_warshall(self, nodes: Optional[List[str]] = None, criterion: str = "time") -> Dict[str, Any]:
+        selected = list(nodes or self.nodes)
+        idx = {node: i for i, node in enumerate(selected)}
+        n = len(selected)
+        dist = [[INF for _ in range(n)] for _ in range(n)]
+        nxt: List[List[Optional[str]]] = [[None for _ in range(n)] for _ in range(n)]
         for i in range(n):
             dist[i][i] = 0
-        for u, v, road, d, t, c in EDGES:
-            if u in idx and v in idx:
-                key = tuple(sorted([u, v]))
-                if key not in self.blocked:
-                    w = [d, d, t, c][wi]
-                    ui, vi = idx[u], idx[v]
-                    if w < dist[ui][vi]:
-                        dist[ui][vi] = w
-                        dist[vi][ui] = w
-                        nxt[ui][vi] = v
-                        nxt[vi][ui] = u
-        init_matrix = [row[:] for row in dist]
+        for edge in self.edges:
+            if edge.key() in self.blocked:
+                continue
+            if edge.source in idx and edge.target in idx:
+                i, j = idx[edge.source], idx[edge.target]
+                w = edge.weight(criterion)
+                if w < dist[i][j]:
+                    dist[i][j] = dist[j][i] = w
+                    nxt[i][j] = edge.target
+                    nxt[j][i] = edge.source
+        initial = [row[:] for row in dist]
         for k in range(n):
             for i in range(n):
                 for j in range(n):
                     if dist[i][k] + dist[k][j] < dist[i][j]:
                         dist[i][j] = dist[i][k] + dist[k][j]
                         nxt[i][j] = nxt[i][k]
-        return nodes, init_matrix, dist, nxt
+        return {"nodes": selected, "initial": initial, "final": dist, "next": nxt}
 
-    def prim_animated(self, start='H2'):
-        """Prim's MST algorithm — animated (Q4c requirement)."""
-        frames = []
-        mst_edges = []
-        in_mst = {start}
-        total = 0
-        frames.append({'mst': [], 'current': start, 'total': 0,
-                       'msg': f"Start Prim's from {start} ({NODE_INFO[start][0]})"})
-        while len(in_mst) < len(self.nodes):
-            best = None
-            for u in in_mst:
-                for v, d, t, c, road in self.adj[u]:
-                    if v not in in_mst:
-                        if best is None or c < best[5]:
-                            best = (u, v, road, d, t, c)
-            if best is None:
-                break
-            u, v, road, d, t, c = best
-            in_mst.add(v)
-            mst_edges.append(best)
-            total += c
-            frames.append({'mst': list(mst_edges), 'current': v, 'total': total,
-                           'msg': f"✓ ADD {u}↔{v} ({road}, AED {c}k) — MST total: AED {total:.1f}k"})
-        return frames, mst_edges, total
+    def kruskal_mst(self) -> Dict[str, Any]:
+        parent = {node: node for node in self.nodes}
+        rank = {node: 0 for node in self.nodes}
 
-    def adjacency_matrix(self, weight='dist'):
-        """Build adjacency matrix representation (Q1 requirement)."""
-        wi = {'dist': 1, 'time': 2, 'cost': 3}[weight]
-        n = len(self.nodes)
-        INF = float('inf')
-        matrix = [[INF] * n for _ in range(n)]
-        for i in range(n):
-            matrix[i][i] = 0
-        for u, v, road, d, t, c in EDGES:
-            key = tuple(sorted([u, v]))
-            if key not in self.blocked:
-                w = [d, d, t, c][wi]
-                ui, vi = self.idx[u], self.idx[v]
-                if w < matrix[ui][vi]:
-                    matrix[ui][vi] = w
-                    matrix[vi][ui] = w
-        return matrix
+        def find(x: str) -> str:
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+
+        def union(a: str, b: str) -> bool:
+            root_a, root_b = find(a), find(b)
+            if root_a == root_b:
+                return False
+            if rank[root_a] < rank[root_b]:
+                root_a, root_b = root_b, root_a
+            parent[root_b] = root_a
+            if rank[root_a] == rank[root_b]:
+                rank[root_a] += 1
+            return True
+
+        chosen: List[Edge] = []
+        rejected: List[Edge] = []
+        trace = []
+        for edge in sorted(self.edges, key=lambda e: (e.cost, e.distance, e.source, e.target)):
+            if edge.key() in self.blocked:
+                continue
+            if union(edge.source, edge.target):
+                chosen.append(edge)
+                action = "ADDED"
+                reason = "No cycle"
+            else:
+                rejected.append(edge)
+                action = "REJECTED"
+                reason = "Cycle would be formed"
+            trace.append({
+                "edge": f"{edge.source}-{edge.target}",
+                "road": edge.road,
+                "cost": edge.cost,
+                "action": action,
+                "reason": reason,
+                "running_total": sum(e.cost for e in chosen),
+            })
+        return {
+            "edges": chosen,
+            "rejected": rejected,
+            "trace": trace,
+            "total": sum(e.cost for e in chosen),
+            "components": self.connected_components(),
+            "is_spanning_tree": len(chosen) == len(self.nodes) - 1 and len(self.connected_components()) == 1,
+        }
+
+    def prim_mst(self, start: str = "H2") -> Dict[str, Any]:
+        visited = {start}
+        heap = MinHeap()
+        chosen: List[Edge] = []
+        trace = []
+
+        def add_edges(node: str) -> None:
+            for edge in self.neighbors(node):
+                if edge.target not in visited:
+                    heap.push(edge.cost, edge)
+
+        add_edges(start)
+        while heap and len(visited) < len(self.nodes):
+            _, _, edge = heap.pop()[:3]
+            if edge.target in visited:
+                continue
+            visited.add(edge.target)
+            chosen.append(edge)
+            trace.append({
+                "edge": f"{edge.source}-{edge.target}",
+                "road": edge.road,
+                "cost": edge.cost,
+                "running_total": sum(e.cost for e in chosen),
+            })
+            add_edges(edge.target)
+        return {
+            "edges": chosen,
+            "trace": trace,
+            "total": sum(e.cost for e in chosen),
+            "visited": sorted(visited),
+            "is_complete": len(visited) == len(self.nodes),
+        }
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# PLOTLY GRAPH DRAWING HELPERS
-# ═══════════════════════════════════════════════════════════════════════════
-def base_network_traces(g, highlight_path=None, highlight_edges=None,
-                        visited=None, current=None, relaxed_edge=None,
-                        mst_edges=None, rejected_edges=None, blocked=None):
-    """Returns (edge_traces, node_trace) for a plotly figure."""
-    traces = []
-    visited = visited or set()
+def reconstruct_path(prev: Dict[str, Optional[str]], source: str, destination: str) -> List[str]:
+    if source == destination:
+        return [source]
+    if prev[destination] is None:
+        return []
+    path = []
+    cur: Optional[str] = destination
+    while cur is not None:
+        path.append(cur)
+        if cur == source:
+            break
+        cur = prev[cur]
+    path.reverse()
+    return path if path and path[0] == source else []
+
+
+def format_number(value: float, decimals: int = 1) -> str:
+    if isinf(value):
+        return "INF"
+    if float(value).is_integer():
+        return str(int(value))
+    return f"{value:.{decimals}f}"
+
+
+def path_to_string(path: List[str]) -> str:
+    return " -> ".join(path) if path else "No route available"
+
+
+# =============================================================================
+# TREE ALGORITHMS
+# =============================================================================
+
+class TreeNode:
+    def __init__(self, key: int) -> None:
+        self.key = key
+        self.left: Optional[TreeNode] = None
+        self.right: Optional[TreeNode] = None
+        self.height = 1
+
+
+def bst_insert(root: Optional[TreeNode], key: int) -> TreeNode:
+    if root is None:
+        return TreeNode(key)
+    if key < root.key:
+        root.left = bst_insert(root.left, key)
+    elif key > root.key:
+        root.right = bst_insert(root.right, key)
+    return root
+
+
+def build_bst(keys: Iterable[int]) -> Optional[TreeNode]:
+    root: Optional[TreeNode] = None
+    for key in keys:
+        root = bst_insert(root, key)
+    return root
+
+
+def tree_height(node: Optional[TreeNode]) -> int:
+    return node.height if node else 0
+
+
+def update_height(node: TreeNode) -> None:
+    node.height = 1 + max(tree_height(node.left), tree_height(node.right))
+
+
+def balance_factor(node: Optional[TreeNode]) -> int:
+    return tree_height(node.left) - tree_height(node.right) if node else 0
+
+
+def rotate_right(y: TreeNode) -> TreeNode:
+    x = y.left
+    assert x is not None
+    t2 = x.right
+    x.right = y
+    y.left = t2
+    update_height(y)
+    update_height(x)
+    return x
+
+
+def rotate_left(x: TreeNode) -> TreeNode:
+    y = x.right
+    assert y is not None
+    t2 = y.left
+    y.left = x
+    x.right = t2
+    update_height(x)
+    update_height(y)
+    return y
+
+
+def avl_insert(root: Optional[TreeNode], key: int, rotations: List[str]) -> TreeNode:
+    if root is None:
+        return TreeNode(key)
+    if key < root.key:
+        root.left = avl_insert(root.left, key, rotations)
+    elif key > root.key:
+        root.right = avl_insert(root.right, key, rotations)
+    else:
+        return root
+    update_height(root)
+    bf = balance_factor(root)
+    if bf > 1 and root.left and key < root.left.key:
+        rotations.append(f"LL imbalance at {root.key}; right rotation")
+        return rotate_right(root)
+    if bf < -1 and root.right and key > root.right.key:
+        rotations.append(f"RR imbalance at {root.key}; left rotation")
+        return rotate_left(root)
+    if bf > 1 and root.left and key > root.left.key:
+        rotations.append(f"LR imbalance at {root.key}; left rotation at {root.left.key}, then right rotation")
+        root.left = rotate_left(root.left)
+        return rotate_right(root)
+    if bf < -1 and root.right and key < root.right.key:
+        rotations.append(f"RL imbalance at {root.key}; right rotation at {root.right.key}, then left rotation")
+        root.right = rotate_right(root.right)
+        return rotate_left(root)
+    return root
+
+
+def build_avl(keys: Iterable[int]) -> Tuple[Optional[TreeNode], List[str]]:
+    root: Optional[TreeNode] = None
+    rotations: List[str] = []
+    for key in keys:
+        root = avl_insert(root, key, rotations)
+    return root, rotations
+
+
+def inorder(root: Optional[TreeNode]) -> List[int]:
+    return inorder(root.left) + [root.key] + inorder(root.right) if root else []
+
+
+def preorder(root: Optional[TreeNode]) -> List[int]:
+    return [root.key] + preorder(root.left) + preorder(root.right) if root else []
+
+
+def postorder(root: Optional[TreeNode]) -> List[int]:
+    return postorder(root.left) + postorder(root.right) + [root.key] if root else []
+
+
+def search_bst(root: Optional[TreeNode], target: int) -> Tuple[bool, List[int]]:
+    path = []
+    cur = root
+    while cur:
+        path.append(cur.key)
+        if target == cur.key:
+            return True, path
+        cur = cur.left if target < cur.key else cur.right
+    return False, path
+
+
+def delete_bst(root: Optional[TreeNode], key: int) -> Optional[TreeNode]:
+    if root is None:
+        return None
+    if key < root.key:
+        root.left = delete_bst(root.left, key)
+    elif key > root.key:
+        root.right = delete_bst(root.right, key)
+    else:
+        if root.left is None:
+            return root.right
+        if root.right is None:
+            return root.left
+        successor = root.right
+        while successor.left:
+            successor = successor.left
+        root.key = successor.key
+        root.right = delete_bst(root.right, successor.key)
+    return root
+
+
+def tree_positions(root: Optional[TreeNode]) -> List[Tuple[int, float, float, Optional[int]]]:
+    if root is None:
+        return []
+    q = SimpleQueue([(root, 0.0, 0.0, None, 1.0)])
+    positions: List[Tuple[int, float, float, Optional[int]]] = []
+    while q:
+        node, x, y, parent, spread = q.dequeue()
+        positions.append((node.key, x, y, parent))
+        if node.left:
+            q.enqueue((node.left, x - spread, y - 1.0, node.key, spread / 2.0))
+        if node.right:
+            q.enqueue((node.right, x + spread, y - 1.0, node.key, spread / 2.0))
+    return positions
+
+
+# =============================================================================
+# SORTING, SEARCHING, AND PEAK HOUR ALGORITHMS
+# =============================================================================
+
+OrderTuple = Tuple[str, int]
+
+def order_key(order: OrderTuple) -> Tuple[str, int]:
+    return order[0], order[1]
+
+
+def merge_sort(items: List[OrderTuple]) -> Tuple[List[OrderTuple], int, List[str]]:
+    steps: List[str] = []
+
+    def sort(arr: List[OrderTuple], level: int = 0) -> Tuple[List[OrderTuple], int]:
+        if len(arr) <= 1:
+            return arr[:], 0
+        mid = len(arr) // 2
+        if level < 3:
+            steps.append(f"Level {level}: split {arr} into {arr[:mid]} and {arr[mid:]}")
+        left, c_left = sort(arr[:mid], level + 1)
+        right, c_right = sort(arr[mid:], level + 1)
+        merged: List[OrderTuple] = []
+        i = j = comparisons = 0
+        while i < len(left) and j < len(right):
+            comparisons += 1
+            if order_key(left[i]) <= order_key(right[j]):
+                merged.append(left[i]); i += 1
+            else:
+                merged.append(right[j]); j += 1
+        merged.extend(left[i:]); merged.extend(right[j:])
+        if level < 3:
+            steps.append(f"Level {level}: merge -> {merged}")
+        return merged, c_left + c_right + comparisons
+
+    sorted_items, count = sort(items)
+    return sorted_items, count, steps
+
+
+def quick_sort(items: List[OrderTuple]) -> Tuple[List[OrderTuple], int, List[str]]:
+    arr = items[:]
+    steps: List[str] = []
+
+    def partition(low: int, high: int, level: int) -> Tuple[int, int]:
+        pivot = arr[high]
+        i = low - 1
+        comparisons = 0
+        for j in range(low, high):
+            comparisons += 1
+            if order_key(arr[j]) <= order_key(pivot):
+                i += 1
+                arr[i], arr[j] = arr[j], arr[i]
+        arr[i + 1], arr[high] = arr[high], arr[i + 1]
+        if level < 2:
+            steps.append(f"Level {level}: pivot {pivot}, partition -> {arr[low:high+1]}")
+        return i + 1, comparisons
+
+    def sort(low: int, high: int, level: int = 0) -> int:
+        if low >= high:
+            return 0
+        p, c = partition(low, high, level)
+        return c + sort(low, p - 1, level + 1) + sort(p + 1, high, level + 1)
+
+    count = sort(0, len(arr) - 1)
+    return arr, count, steps
+
+
+def binary_search(values: List[int], target: int) -> Tuple[int, int, List[Tuple[int, int, int, int]]]:
+    low, high = 0, len(values) - 1
+    comparisons = 0
+    trace = []
+    while low <= high:
+        mid = (low + high) // 2
+        comparisons += 1
+        trace.append((low, mid, high, values[mid]))
+        if values[mid] == target:
+            return mid, comparisons, trace
+        if target < values[mid]:
+            high = mid - 1
+        else:
+            low = mid + 1
+    return -1, comparisons, trace
+
+
+def linear_search(values: List[int], target: int) -> Tuple[int, int]:
+    for i, value in enumerate(values):
+        if value == target:
+            return i, i + 1
+    return -1, len(values)
+
+
+def peak_hour_divide_conquer(hourly_orders: List[int], top_k: int = 1) -> List[Tuple[int, int]]:
+    candidates: List[Tuple[int, int]] = []
+
+    def collect(start: int, end: int) -> None:
+        if end - start == 1:
+            candidates.append((start, hourly_orders[start]))
+            return
+        mid = (start + end) // 2
+        left_total = sum(hourly_orders[start:mid])
+        right_total = sum(hourly_orders[mid:end])
+        if left_total >= right_total:
+            collect(start, mid)
+            if top_k > 1:
+                collect(mid, end)
+        else:
+            collect(mid, end)
+            if top_k > 1:
+                collect(start, mid)
+
+    collect(0, len(hourly_orders))
+    return sorted(candidates, key=lambda x: x[1], reverse=True)[:top_k]
+
+
+# =============================================================================
+# STREAMLIT UI HELPERS
+# =============================================================================
+
+def require_ui_libraries() -> Tuple[Any, Any, Any, Any]:
+    try:
+        import streamlit as st
+        import plotly.graph_objects as go
+        import plotly.express as px
+        import pandas as pd
+    except ModuleNotFoundError as exc:
+        missing = str(exc).split("No module named ")[-1].strip("'")
+        raise SystemExit(
+            f"Missing dependency: {missing}. Install dependencies with: pip install -r requirements.txt"
+        )
+    return st, go, px, pd
+
+
+def matrix_to_dataframe(pd: Any, labels: List[str], matrix: List[List[float]]) -> Any:
+    data = []
+    for label, row in zip(labels, matrix):
+        data.append([label] + [format_number(v) for v in row])
+    return pd.DataFrame(data, columns=["Node"] + labels).set_index("Node")
+
+
+def network_figure(go: Any, graph: WaselGraph, title: str = "WaselX Delivery Network",
+                   highlight_path: Optional[List[str]] = None,
+                   mst_edges: Optional[List[Edge]] = None,
+                   blocked_edges: Optional[Iterable[Tuple[str, str]]] = None,
+                   visited: Optional[Iterable[str]] = None,
+                   current: Optional[str] = None) -> Any:
     highlight_path = highlight_path or []
-    highlight_edges = highlight_edges or []
     mst_edges = mst_edges or []
-    rejected_edges = rejected_edges or []
-    blocked = blocked or set()
-    path_set = set(zip(highlight_path, highlight_path[1:]))
-    path_set |= set(zip(highlight_path[1:], highlight_path))
-    mst_set = {(u, v) for u, v, *_ in mst_edges} | {(v, u) for u, v, *_ in mst_edges}
-    rejected_set = set(rejected_edges) | {(v, u) for u, v in rejected_edges}
+    blocked = {normalized_edge(u, v) for u, v in (blocked_edges or [])}
+    visited_set = set(visited or [])
+    path_edges = {normalized_edge(a, b) for a, b in zip(highlight_path, highlight_path[1:])}
+    mst_set = {edge.key() for edge in mst_edges}
+    fig = go.Figure()
 
-    for u, v, road, d, t, c in EDGES:
-        key = tuple(sorted([u, v]))
-        x0, y0 = POS[u]
-        x1, y1 = POS[v]
-        mx, my = (x0 + x1) / 2, (y0 + y1) / 2
-
+    for edge in graph.edges:
+        x0, y0 = POS[edge.source]
+        x1, y1 = POS[edge.target]
+        key = edge.key()
         if key in blocked:
-            color, width, dash = '#ff4444', 2, 'dot'
-        elif (u, v) in path_set or (v, u) in path_set:
-            color, width, dash = '#ff6b00', 4, 'solid'
-        elif (u, v) in mst_set:
-            color, width, dash = '#00b050', 3, 'solid'
-        elif (u, v) in rejected_set:
-            color, width, dash = '#cc0000', 2, 'dash'
-        elif relaxed_edge and ((u, v) == relaxed_edge or (v, u) == relaxed_edge):
-            color, width, dash = '#ffd700', 3, 'solid'
+            color, width, dash = "#CC0000", 3, "dot"
+        elif key in path_edges:
+            color, width, dash = "#FF6B00", 5, "solid"
+        elif key in mst_set:
+            color, width, dash = "#00A651", 4, "solid"
         else:
-            color, width, dash = '#cccccc', 1.2, 'solid'
-
-        traces.append(go.Scatter(
-            x=[x0, mx, x1], y=[y0, my, y1],
-            mode='lines',
-            line=dict(color=color, width=width, dash=dash),
-            hoverinfo='text',
-            text=f"{u}↔{v} | {road}<br>{d}km | {t}min | AED{c}",
-            showlegend=False
+            color, width, dash = "#C8CDD2", 1.2, "solid"
+        fig.add_trace(go.Scatter(
+            x=[x0, x1], y=[y0, y1], mode="lines",
+            line={"color": color, "width": width, "dash": dash},
+            text=f"{edge.source}-{edge.target} | {edge.road}<br>{edge.distance:g} km | {edge.time:g} min | AED {edge.cost:g}",
+            hoverinfo="text", showlegend=False,
+        ))
+        fig.add_trace(go.Scatter(
+            x=[(x0 + x1) / 2], y=[(y0 + y1) / 2], mode="text",
+            text=[f"{edge.distance:g}km"], textfont={"size": 9, "color": "#4D5663"},
+            hoverinfo="skip", showlegend=False,
         ))
 
-    # Edge weight labels
-    for u, v, road, d, t, c in EDGES:
-        key = tuple(sorted([u, v]))
-        if key in blocked: continue
-        x0, y0 = POS[u]; x1, y1 = POS[v]
-        traces.append(go.Scatter(
-            x=[(x0+x1)/2], y=[(y0+y1)/2],
-            mode='text',
-            text=[f"{d}km"],
-            textfont=dict(size=8, color='#666'),
-            hoverinfo='skip', showlegend=False
-        ))
-
-    # Nodes
-    nx_list, ny_list, nc_list, ns_list, nt_list, nl_list = [], [], [], [], [], []
-    for node in NODES:
+    x_vals, y_vals, labels, colors, sizes, hover = [], [], [], [], [], []
+    for node in graph.nodes:
         x, y = POS[node]
-        nx_list.append(x); ny_list.append(y)
-        is_hub = NODE_INFO[node][1] == 'Hub'
-
+        name, kind, emirate, orders, *_ = NODE_INFO[node]
+        x_vals.append(x); y_vals.append(y); labels.append(node)
+        hover.append(f"<b>{node}: {name}</b><br>{kind} | {emirate}<br>Daily orders: {orders}")
         if node == current:
-            nc_list.append('#ff6b00'); ns_list.append(28)
-        elif node in visited:
-            nc_list.append('#00b050'); ns_list.append(20)
+            colors.append("#FF6B00"); sizes.append(25)
         elif node in highlight_path:
-            nc_list.append('#ff6b00'); ns_list.append(22)
+            colors.append("#FF6B00"); sizes.append(22)
+        elif node in visited_set:
+            colors.append("#00A651"); sizes.append(19)
         else:
-            nc_list.append(NODE_COLORS[node]); ns_list.append(18 if is_hub else 14)
+            colors.append(EMIRATE_COLORS.get(emirate, "#777")); sizes.append(18 if kind == "Hub" else 14)
 
-        info = NODE_INFO[node]
-        nt_list.append(f"<b>{node}</b> — {info[0]}<br>Type: {info[1]}<br>Emirate: {info[2]}<br>Daily Orders: {info[3]}")
-        nl_list.append(node)
-
-    traces.append(go.Scatter(
-        x=nx_list, y=ny_list,
-        mode='markers+text',
-        marker=dict(size=ns_list, color=nc_list,
-                    line=dict(width=2, color='white')),
-        text=nl_list,
-        textposition='top center',
-        textfont=dict(size=10, color='black', family='Arial Black'),
-        hovertext=nt_list, hoverinfo='text',
-        showlegend=False
+    fig.add_trace(go.Scatter(
+        x=x_vals, y=y_vals, mode="markers+text", text=labels,
+        textposition="top center", hovertext=hover, hoverinfo="text",
+        marker={"size": sizes, "color": colors, "line": {"width": 2, "color": "white"}},
+        textfont={"size": 11, "color": "#111"}, showlegend=False,
     ))
-    return traces
-
-
-def make_figure(traces, title="WaselX Delivery Network"):
-    fig = go.Figure(data=traces)
     fig.update_layout(
-        title=dict(text=title, font=dict(size=15, color='#1F4E79'), x=0.5),
-        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-        plot_bgcolor='#f8faff',
-        paper_bgcolor='white',
-        height=480,
-        margin=dict(l=10, r=10, t=40, b=10),
-        hovermode='closest',
+        title={"text": title, "x": 0.5, "font": {"size": 17, "color": "#12395B"}},
+        xaxis={"showgrid": False, "zeroline": False, "showticklabels": False},
+        yaxis={"showgrid": False, "zeroline": False, "showticklabels": False},
+        height=520,
+        plot_bgcolor="#F8FAFD",
+        paper_bgcolor="white",
+        margin={"l": 5, "r": 5, "t": 45, "b": 5},
     )
     return fig
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# SIDEBAR
-# ═══════════════════════════════════════════════════════════════════════════
-with st.sidebar:
-    st.markdown("## 🚚 WaselX DSA")
-    st.markdown("**MAIB Final Project**")
-    st.markdown("---")
-    section = st.radio("Navigate", [
-        "🏠 Overview",
-        "🗺️ Network Explorer",
-        "🔵 Dijkstra's Pathfinder",
-        "📊 Floyd-Warshall",
-        "🌊 BFS / DFS Traversal",
-        "🌲 Minimum Spanning Tree",
-        "🌳 BST & AVL Tree",
-        "📋 Priority Queue",
-        "🔗 Linked List Simulator",
-        "🔄 Circular Linked List",
-        "📦 Order Lifecycle Stack",
-        "📊 Sorting Benchmark",
-        "🔍 Binary Search Demo",
-        "⏰ Peak Hour Finder",
-    ])
-    st.markdown("---")
-    st.markdown("**Road Closures**")
-    blocked_labels = {f"{u}↔{v} ({road})": tuple(sorted([u, v]))
-                      for u, v, road, *_ in EDGES}
-    blocked_selections = st.multiselect("Block edges:", list(blocked_labels.keys()))
-    blocked_set = {blocked_labels[s] for s in blocked_selections}
-    if blocked_set:
-        st.warning(f"⚠️ {len(blocked_set)} road(s) closed")
-    st.markdown("---")
-    st.caption("**Team:** " + " · ".join(TEAM_MEMBERS))
+def tree_figure(go: Any, positions: List[Tuple[int, float, float, Optional[int]]], title: str,
+                highlight: Optional[int] = None) -> Any:
+    fig = go.Figure()
+    pos = {key: (x, y) for key, x, y, _ in positions}
+    for key, x, y, parent in positions:
+        if parent is not None:
+            px, py = pos[parent]
+            fig.add_trace(go.Scatter(x=[px, x], y=[py, y], mode="lines",
+                                     line={"color": "#A9B0B8", "width": 2}, showlegend=False))
+    for key, x, y, _ in positions:
+        color = "#FF6B00" if key == highlight else "#2E75B6"
+        fig.add_trace(go.Scatter(x=[x], y=[y], mode="markers+text", text=[str(key)],
+                                 textposition="middle center",
+                                 marker={"size": 38, "color": color, "line": {"width": 2, "color": "white"}},
+                                 textfont={"color": "white", "size": 11}, showlegend=False))
+    fig.update_layout(title=title, height=410, plot_bgcolor="#F8FAFD", paper_bgcolor="white",
+                      xaxis={"showgrid": False, "zeroline": False, "showticklabels": False},
+                      yaxis={"showgrid": False, "zeroline": False, "showticklabels": False},
+                      margin={"l": 5, "r": 5, "t": 45, "b": 5})
+    return fig
 
-G = WaselGraph(blocked_edges=blocked_set)
 
-# ═══════════════════════════════════════════════════════════════════════════
-# OVERVIEW
-# ═══════════════════════════════════════════════════════════════════════════
-if section == "🏠 Overview":
+def style_app(st: Any) -> None:
+    st.set_page_config(page_title="WaselX Express — DSA Prototype", page_icon="🚚", layout="wide")
     st.markdown("""
-    <div class="main-title">
-      <h1>🚚 WaselX Express</h1>
-      <p style="font-size:1.1rem;opacity:0.9">Interactive DSA Visualizer — MAIB Final Project</p>
-    </div>
+    <style>
+    [data-testid="stSidebar"] {background:#0F1C2E;}
+    [data-testid="stSidebar"] * {color:#E8F1FF !important;}
+    .hero {background:linear-gradient(135deg,#12395B,#2E75B6); padding:24px; border-radius:18px; color:white; text-align:center; margin-bottom:18px;}
+    .metric-card {background:white; border:1px solid #E1E6EF; border-radius:14px; padding:16px; box-shadow:0 3px 12px rgba(0,0,0,.04);}
+    .note {background:#F2F7FF; border-left:5px solid #2E75B6; padding:12px 14px; border-radius:8px;}
+    .warn {background:#FFF8E1; border-left:5px solid #FFB000; padding:12px 14px; border-radius:8px;}
+    .success {background:#ECF8EF; border-left:5px solid #00A651; padding:12px 14px; border-radius:8px;}
+    </style>
     """, unsafe_allow_html=True)
 
-    c1, c2, c3, c4 = st.columns(4)
-    for col, val, label in zip([c1,c2,c3,c4],
-        ["15","24","3,500","7"],
-        ["Network Nodes","Road Edges","Daily Orders","Emirates"]):
-        col.markdown(f'<div class="metric-card"><h2>{val}</h2><p>{label}</p></div>', unsafe_allow_html=True)
 
-    st.markdown("---")
-    st.subheader("🗺️ Full WaselX Delivery Network")
-    traces = base_network_traces(G)
-    fig = make_figure(traces, "WaselX UAE Delivery Network — All 15 Nodes, 24 Edges")
-    st.plotly_chart(fig, use_container_width=True)
+# =============================================================================
+# STREAMLIT PAGES
+# =============================================================================
 
-    st.markdown("---")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader("📦 The 3 Business Problems")
-        st.markdown("""
-        | # | Problem | Cost |
-        |---|---------|------|
-        | 1 | Inefficient routes (+23% distance) | AED 1.2M/yr |
-        | 2 | Slow dispatch (8-min manual delay) | 12% complaints |
-        | 3 | Poor order lookup (45s avg) | CSAT 3.2/5 |
-        """)
-    with col2:
-        st.subheader("✅ DSA Solutions")
-        st.markdown("""
-        | Problem | Solution | Savings |
-        |---------|----------|---------|
-        | Routes | Dijkstra's Algorithm | AED 1.2M/yr |
-        | Dispatch | Priority Queue (Min-Heap) | AED 2.4M/yr |
-        | Lookup | AVL Tree | CSAT 4.0+ |
-        """)
-
-    st.info("👈 Use the sidebar to explore each algorithm interactively!")
-
-# ═══════════════════════════════════════════════════════════════════════════
-# NETWORK EXPLORER
-# ═══════════════════════════════════════════════════════════════════════════
-elif section == "🗺️ Network Explorer":
-    st.title("🗺️ Network Explorer")
-    st.markdown("Explore the graph representations: Visual Map, Adjacency List, and Adjacency Matrix (Q1 requirement).")
-
-    net_tab1, net_tab2, net_tab3 = st.tabs(["🗺️ Visual Map", "📋 Adjacency List", "🧮 Adjacency Matrix"])
-
-    with net_tab1:
-        col1, col2 = st.columns([3, 1])
-
-        with col2:
-            st.subheader("Filters")
-            show_hubs = st.checkbox("Show Hubs", True)
-            show_zones = st.checkbox("Show Delivery Zones", True)
-            color_by = st.selectbox("Color by", ["Emirate", "Type", "Daily Orders"])
-            selected_node = st.selectbox("Highlight node", ["None"] + NODES)
-
-            st.subheader("Node Info")
-            if selected_node != "None":
-                info = NODE_INFO[selected_node]
-                st.markdown(f"""
-                **{selected_node} — {info[0]}**
-                - Type: {info[1]}
-                - Emirate: {info[2]}
-                - Daily Orders: {info[3]}
-                - Neighbors: {len(G.adj[selected_node])}
-                """)
-                nbrs = [(v, d, t, c, r) for v, d, t, c, r in G.adj[selected_node]]
-                st.markdown("**Connected to:**")
-                for v, d, t, c, r in nbrs:
-                    st.markdown(f"→ `{v}` via {r} ({d}km, {t}min)")
-
-        with col1:
-            traces = base_network_traces(G,
-                highlight_path=[selected_node] if selected_node != "None" else [],
-                visited={selected_node} if selected_node != "None" else set())
-            fig = make_figure(traces, "WaselX Network — Click nodes for info")
-            st.plotly_chart(fig, use_container_width=True)
-
-        # Stats
-        st.markdown("---")
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            orders_by_emirate = {}
-            for n in NODES:
-                e = NODE_INFO[n][2]
-                orders_by_emirate[e] = orders_by_emirate.get(e, 0) + NODE_INFO[n][3]
-            fig_pie = px.pie(values=list(orders_by_emirate.values()),
-                             names=list(orders_by_emirate.keys()),
-                             title="Daily Orders by Emirate",
-                             color_discrete_sequence=['#2E75B6','#C55A11','#375623','#7030A0'])
-            fig_pie.update_layout(height=300)
-            st.plotly_chart(fig_pie, use_container_width=True)
-
-        with c2:
-            nodes_sorted = sorted(NODES, key=lambda n: NODE_INFO[n][3], reverse=True)
-            fig_bar = px.bar(x=nodes_sorted, y=[NODE_INFO[n][3] for n in nodes_sorted],
-                             color=[NODE_COLORS[n] for n in nodes_sorted],
-                             title="Daily Orders per Node",
-                             labels={'x':'Node','y':'Orders'})
-            fig_bar.update_layout(height=300, showlegend=False)
-            st.plotly_chart(fig_bar, use_container_width=True)
-
-        with c3:
-            edge_costs = [c for _, _, _, _, _, c in EDGES]
-            fig_hist = px.histogram(x=edge_costs, nbins=8, title="Edge Cost Distribution (AED)",
-                                    color_discrete_sequence=['#2E75B6'])
-            fig_hist.update_layout(height=300)
-            st.plotly_chart(fig_hist, use_container_width=True)
-
-    with net_tab2:
-        st.subheader("Adjacency List Representation")
-        st.markdown("Most efficient for WaselX's sparse network (V=15, E=24). Uses only memory proportional to edges `O(V+E)`.")
-        for u in NODES:
-            neighbors = [f"{v}({d}km)" for v, d, t, c, r in G.adj[u]]
-            st.markdown(f"**{u}**: `[{', '.join(neighbors)}]`")
-
-    with net_tab3:
-        st.subheader("Adjacency Matrix Representation")
-        st.markdown("Allows `O(1)` edge checks, but wastes memory on `INF` for unconnected pairs `O(V²)`.")
-        mat_weight = st.selectbox("Weight metric for matrix", ["dist", "time", "cost"], format_func=lambda x: {"dist": "Distance (km)", "time": "Time (min)", "cost": "Cost (AED)"}[x])
-        matrix = G.adjacency_matrix(weight=mat_weight)
-        
-        import pandas as pd
-        header = [""] + list(NODES)
-        rows = []
-        for i, n in enumerate(NODES):
-            row = [n] + [f"{matrix[i][j]:.0f}" if matrix[i][j] < float('inf') else "∞" for j in range(len(NODES))]
-            rows.append(row)
-        
-        df_mat = pd.DataFrame(rows, columns=header).set_index("")
-        st.dataframe(df_mat, use_container_width=True)
-
-        st.info("💡 **Why Adjacency List is preferred:** The matrix stores 225 entries (most are ∞). The list stores only 48 edge directions. Dijkstra's and BFS algorithms run significantly faster using the Adjacency List on sparse graphs.")
-
-# ═══════════════════════════════════════════════════════════════════════════
-# DIJKSTRA
-# ═══════════════════════════════════════════════════════════════════════════
-elif section == "🔵 Dijkstra's Pathfinder":
-    st.title("🔵 Dijkstra's Shortest Path — Step-by-Step Animation")
-    st.markdown("Watch Dijkstra's algorithm explore the network in real time, relaxing edges and updating distances.")
-
-    col1, col2, col3, col4 = st.columns(4)
-    with col1: src = st.selectbox("Source", NODES, index=0)
-    with col2: dst = st.selectbox("Destination", NODES, index=7)
-    with col3: weight = st.selectbox("Optimize for", ["dist","time","cost"],
-                                      format_func=lambda x: {"dist":"Distance (km)","time":"Time (min)","cost":"Cost (AED)"}[x])
-    with col4:
-        speed = st.selectbox("Animation Speed", ["Slow","Medium","Fast"],index=1)
-        delay = {"Slow":0.9,"Medium":0.45,"Fast":0.15}[speed]
-
-    if src == dst:
-        st.warning("Source and destination must be different."); st.stop()
-
-    run = st.button("▶ Run Dijkstra's Animation", type="primary")
-
-    frames, path, best_dist, prev = G.dijkstra_animated(src, dst, weight)
-
-    # Always show final state first
-    final_traces = base_network_traces(G, highlight_path=path,
-                                        visited=frames[-1]['visited'] if frames else set())
-    fig = make_figure(final_traces, f"Dijkstra's: {src} → {dst}  |  Best {weight} = {best_dist:.1f}")
-    graph_placeholder = st.empty()
-    graph_placeholder.plotly_chart(fig, use_container_width=True)
-
-    col_a, col_b, col_c = st.columns(3)
-    w_label = {"dist":"km","time":"min","cost":"AED"}[weight]
-    col_a.metric("Optimal Path", " → ".join(path) if path else "No path")
-    col_b.metric(f"Best {weight}", f"{best_dist:.1f} {w_label}" if best_dist < float('inf') else "∞")
-    col_c.metric("Steps taken", len(frames))
-
-    step_placeholder = st.empty()
-    log_placeholder  = st.empty()
-
-    if run:
-        logs = []
-        for i, frame in enumerate(frames):
-            visited  = frame['visited']
-            cur      = frame['current']
-            relaxed  = frame['relaxed']
-            msg      = frame['msg']
-            dist_map = frame['dist']
-
-            # Decide what path to highlight so far
-            partial_path = []
-            if cur in prev or cur == src:
-                c = cur
-                while c:
-                    partial_path.append(c)
-                    c = frame['prev'].get(c)
-                partial_path.reverse()
-
-            traces = base_network_traces(G,
-                highlight_path=partial_path,
-                visited=visited,
-                current=cur,
-                relaxed_edge=relaxed,
-                blocked=blocked_set)
-            fig_step = make_figure(traces,
-                f"Step {i+1}/{len(frames)}: {msg}")
-            graph_placeholder.plotly_chart(fig_step, use_container_width=True)
-
-            logs.append(f"**Step {i+1}:** {msg}")
-            with log_placeholder.container():
-                for log in logs[-6:]:
-                    st.markdown(f'<div class="step-box">{log}</div>', unsafe_allow_html=True)
-
-            time.sleep(delay)
-
-        # Final
-        final_traces = base_network_traces(G, highlight_path=path, visited=set(NODES))
-        fig_final = make_figure(final_traces, f"✅ Done! Optimal {weight} path: {' → '.join(path)}")
-        graph_placeholder.plotly_chart(fig_final, use_container_width=True)
-        st.success(f"✅ Shortest path found: **{' → '.join(path)}** | {weight}: **{best_dist:.1f} {w_label}**")
-
-    # Complexity
-    with st.expander("📚 Algorithm Details & Complexity"):
-        st.markdown("""
-        **Dijkstra's Algorithm (Min-Heap)**
-        
-        | Property | Value |
-        |----------|-------|
-        | Time Complexity | O((V + E) log V) |
-        | Space Complexity | O(V) |
-        | For WaselX (V=15, E=24) | ~156 operations per query |
-        | Supports negative weights? | ❌ No |
-        | Best for | Single-source, real-time routing |
-        
-        **How it works:** Greedily picks the unvisited node with the smallest known distance, 
-        then relaxes all its outgoing edges. An orange edge means it was just relaxed (improved).
-        Green nodes = already visited with optimal distance confirmed.
-        """)
-
-    st.markdown("---")
-    st.subheader("🌉 Advanced Path Analysis")
-    adv_tab1, adv_tab2 = st.tabs(["🛣️ Dual Path Overlay (Q6d)", "🚧 Road Closure Comparison (Q27d)"])
-
-    with adv_tab1:
-        st.markdown("**Compare optimal paths for different metrics simultaneously.**")
-        col_m1, col_m2 = st.columns(2)
-        with col_m1: metric_1 = st.selectbox("Metric 1 (Blue Path)", ["time", "dist", "cost"], index=0)
-        with col_m2: metric_2 = st.selectbox("Metric 2 (Orange Path)", ["cost", "dist", "time"], index=0)
-
-        _, path1, d1, _ = G.dijkstra_animated(src, dst, metric_1)
-        _, path2, d2, _ = G.dijkstra_animated(src, dst, metric_2)
-
-        traces = base_network_traces(G)
-        
-        # Overlay Path 1 (Blue)
-        x_p1, y_p1 = [], []
-        for i in range(len(path1)-1):
-            n1, n2 = path1[i], path1[i+1]
-            x_p1.extend([NODE_POS[n1][0], NODE_POS[n2][0], None])
-            y_p1.extend([NODE_POS[n1][1], NODE_POS[n2][1], None])
-        traces.append(go.Scatter(x=x_p1, y=y_p1, mode='lines', 
-                                 line=dict(color='#2E75B6', width=6), opacity=0.7, name=f'Opt by {metric_1}'))
-
-        # Overlay Path 2 (Orange) - offset slightly for visibility
-        x_p2, y_p2 = [], []
-        for i in range(len(path2)-1):
-            n1, n2 = path2[i], path2[i+1]
-            x_p2.extend([NODE_POS[n1][0]+0.01, NODE_POS[n2][0]+0.01, None])
-            y_p2.extend([NODE_POS[n1][1]-0.01, NODE_POS[n2][1]-0.01, None])
-        traces.append(go.Scatter(x=x_p2, y=y_p2, mode='lines', 
-                                 line=dict(color='#ff6b00', width=6, dash='dot'), opacity=0.9, name=f'Opt by {metric_2}'))
-
-        fig_dual = make_figure(traces, f"Comparing paths from {src} to {dst}")
-        st.plotly_chart(fig_dual, use_container_width=True)
-        
-        c1, c2 = st.columns(2)
-        c1.info(f"**Path 1 ({metric_1}):** {' → '.join(path1)} | {d1:.1f}")
-        c2.warning(f"**Path 2 ({metric_2}):** {' → '.join(path2)} | {d2:.1f}")
-
-    with adv_tab2:
-        st.markdown("**Simulate a sudden road closure and instantly find the optimal detour.**")
-        
-        closure_edges = [f"{u} ⇄ {v}" for u, v, _, _, _, _ in EDGES]
-        blocked_edge_str = st.selectbox("Select road to block:", ["None"] + closure_edges)
-        
-        c_left, c_right = st.columns(2)
-        
-        # Original (Unblocked) Path
-        _, path_orig, d_orig, _ = G.dijkstra_animated(src, dst, weight)
-        
-        if blocked_edge_str == "None":
-            st.info("No roads blocked. Standard routing applies.")
-            blocked_set_adv = set()
-            path_alt, d_alt = path_orig, d_orig
-        else:
-            u_blk, v_blk = blocked_edge_str.split(" ⇄ ")
-            blocked_set_adv = {(u_blk, v_blk), (v_blk, u_blk)}
-            
-            # Re-run Dijkstra with blocked edge
-            _, path_alt, d_alt, _ = G.dijkstra_animated(src, dst, weight, blocked_edges=blocked_set_adv)
-            
-        with c_left:
-            st.markdown("**Original Route:**")
-            fig_orig = make_figure(base_network_traces(G, highlight_path=path_orig, blocked=blocked_set_adv), "Before Closure")
-            st.plotly_chart(fig_orig, use_container_width=True)
-            st.success(f"Cost: {d_orig:.1f} | Path: {' → '.join(path_orig)}")
-            
-        with c_right:
-            st.markdown("**Alternative Route:**")
-            fig_alt = make_figure(base_network_traces(G, highlight_path=path_alt, blocked=blocked_set_adv), "After Closure")
-            st.plotly_chart(fig_alt, use_container_width=True)
-            if not path_alt:
-                st.error("No path available!")
-            else:
-                st.warning(f"Cost: {d_alt:.1f} | Path: {' → '.join(path_alt)}")
-        st.code("""
-def dijkstra(graph, src, dst, weight='dist'):
-    dist = {n: float('inf') for n in graph.nodes}
-    dist[src] = 0
-    prev = {n: None for n in graph.nodes}
-    heap = [(0, src)]
-    visited = set()
-    
-    while heap:
-        d, u = heapq.heappop(heap)
-        if u in visited: continue
-        visited.add(u)
-        if u == dst: break
-        for v, edge_weight in graph.neighbors(u):
-            if dist[u] + edge_weight < dist[v]:
-                dist[v] = dist[u] + edge_weight
-                prev[v] = u
-                heapq.heappush(heap, (dist[v], v))
-    
-    # Reconstruct path
-    path = []
-    cur = dst
-    while cur: path.append(cur); cur = prev[cur]
-    return list(reversed(path)), dist[dst]
-        """, language='python')
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# FLOYD-WARSHALL
-# ═══════════════════════════════════════════════════════════════════════════
-elif section == "📊 Floyd-Warshall":
-    st.title("📊 Floyd-Warshall — All-Pairs Shortest Paths")
-    st.markdown("Compute shortest paths between **all pairs** of hubs simultaneously. O(V³) algorithm ideal for offline analytics.")
-
-    col1, col2 = st.columns(2)
-    with col1:
-        fw_weight = st.selectbox("Weight metric", ["time", "dist", "cost"],
-                                  format_func=lambda x: {"dist": "Distance (km)", "time": "Time (min)", "cost": "Cost (AED)"}[x])
-    with col2:
-        fw_scope = st.radio("Scope", ["Hubs Only (H1–H7)", "All 15 Nodes"])
-
-    subset = [n for n in NODES if n.startswith('H')] if "Hubs" in fw_scope else None
-    nodes_fw, init_mat, final_mat, nxt = G.floyd_warshall(node_subset=subset, weight=fw_weight)
-
-    tab_init, tab_final, tab_analysis = st.tabs(["📋 Initial Matrix", "✅ Final Matrix", "📈 Analysis"])
-
-    w_label = {"dist": "km", "time": "min", "cost": "AED"}[fw_weight]
-
-    with tab_init:
-        st.subheader("Initial Distance Matrix (direct edges only)")
-        header = [""] + list(nodes_fw)
-        rows = []
-        for i, n in enumerate(nodes_fw):
-            row = [n] + [f"{init_mat[i][j]:.0f}" if init_mat[i][j] < float('inf') else "∞" for j in range(len(nodes_fw))]
-            rows.append(row)
-        import pandas as pd
-        df_init = pd.DataFrame(rows, columns=header).set_index("")
-        st.dataframe(df_init, use_container_width=True)
-
-    with tab_final:
-        st.subheader(f"Final All-Pairs Shortest {fw_weight.title()} Matrix")
-        rows2 = []
-        for i, n in enumerate(nodes_fw):
-            row = [n] + [f"{final_mat[i][j]:.0f}" if final_mat[i][j] < float('inf') else "∞" for j in range(len(nodes_fw))]
-            rows2.append(row)
-        df_final = pd.DataFrame(rows2, columns=header).set_index("")
-        st.dataframe(df_final, use_container_width=True)
-
-    with tab_analysis:
-        st.subheader("Hub Connectivity Analysis")
-        idx_fw = {n: i for i, n in enumerate(nodes_fw)}
-        INF = float('inf')
-
-        # Find farthest pair
-        max_val, max_pair = 0, ("", "")
-        for i in range(len(nodes_fw)):
-            for j in range(i + 1, len(nodes_fw)):
-                if final_mat[i][j] < INF and final_mat[i][j] > max_val:
-                    max_val = final_mat[i][j]
-                    max_pair = (nodes_fw[i], nodes_fw[j])
-
-        # Find best-connected hub
-        best_hub, best_avg = "", INF
-        for i, n in enumerate(nodes_fw):
-            vals = [final_mat[i][j] for j in range(len(nodes_fw)) if i != j and final_mat[i][j] < INF]
-            if vals:
-                avg = sum(vals) / len(vals)
-                if avg < best_avg:
-                    best_avg, best_hub = avg, n
-
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Farthest Pair", f"{max_pair[0]}↔{max_pair[1]}", f"{max_val:.0f} {w_label}")
-        c2.metric("Best Connected", f"{best_hub}", f"Avg: {best_avg:.1f} {w_label}")
-        c3.metric("Matrix Size", f"{len(nodes_fw)}×{len(nodes_fw)}", f"O(V³) = {len(nodes_fw)**3} ops")
-
-        # Disconnected pairs
-        disc = [(nodes_fw[i], nodes_fw[j]) for i in range(len(nodes_fw)) for j in range(i+1, len(nodes_fw)) if final_mat[i][j] >= INF]
-        if disc:
-            st.warning(f"⚠️ {len(disc)} disconnected pair(s) found: {', '.join(f'{a}↔{b}' for a,b in disc[:5])}")
-
-    with st.expander("📚 Floyd-Warshall Details"):
-        st.markdown(f"""
-        **Floyd-Warshall Algorithm**
-
-        | Property | Value |
-        |----------|-------|
-        | Time Complexity | O(V³) |
-        | Space Complexity | O(V²) |
-        | For WaselX Hubs (V=7) | 343 operations |
-        | For Full Network (V=15) | 3,375 operations |
-        | Best for | All-pairs offline analytics |
-        | Supports negative weights? | ✅ Yes (no negative cycles) |
-
-        **When to use:** Nightly batch jobs, SLA modeling, hub connectivity dashboards.
-        **When NOT to use:** Real-time single-pair queries (use Dijkstra instead).
-        """)
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# BFS / DFS
-# ═══════════════════════════════════════════════════════════════════════════
-elif section == "🌊 BFS / DFS Traversal":
-    st.title("🌊 BFS / DFS Traversal Animation")
-
-    col1, col2, col3 = st.columns(3)
-    with col1: start = st.selectbox("Start Node", NODES, index=2)
-    with col2: algo  = st.radio("Algorithm", ["BFS","DFS"])
-    with col3: speed = st.selectbox("Speed", ["Slow","Medium","Fast"], index=1)
-    delay = {"Slow":0.8,"Medium":0.4,"Fast":0.12}[speed]
-
-    run = st.button(f"▶ Run {algo} Animation", type="primary")
-    graph_ph = st.empty()
-    log_ph   = st.empty()
-    info_ph  = st.empty()
-
-    def dfs_animated(g, src):
-        frames, seen = [], set()
-        def _dfs(node, depth=0):
-            seen.add(node)
-            frames.append({'visited': list(seen), 'current': node,
-                           'msg': f"Visit {node} ({NODE_INFO[node][0]}) at depth {depth}"})
-            for nb, *_ in g.adj[node]:
-                if nb not in seen:
-                    _dfs(nb, depth+1)
-        _dfs(src)
-        return frames, list(seen)
-
-    if algo == "BFS":
-        frames, order, parent = G.bfs_animated(start)
-    else:
-        frames, order = dfs_animated(G, start)
-        parent = {}
-
-    # Show static final
-    traces = base_network_traces(G, visited=set(order), current=start)
-    graph_ph.plotly_chart(make_figure(traces, f"{algo} from {start}"), use_container_width=True)
-
-    if run:
-        logs = []
-        for i, frame in enumerate(frames):
-            vis  = set(frame['visited'])
-            cur  = frame['current']
-            msg  = frame['msg']
-            traces = base_network_traces(G, visited=vis, current=cur, blocked=blocked_set)
-            graph_ph.plotly_chart(
-                make_figure(traces, f"{algo} Step {i+1}/{len(frames)}: {msg}"),
-                use_container_width=True)
-            logs.append(f"Step {i+1}: {msg}")
-            with log_ph.container():
-                for log in logs[-5:]:
-                    st.markdown(f'<div class="step-box">{log}</div>', unsafe_allow_html=True)
-            time.sleep(delay)
-
-        st.success(f"✅ {algo} complete! Visited {len(order)} nodes.")
-        info_ph.markdown(f"**Traversal order:** `{'  →  '.join(order)}`")
-
-    with st.expander("📚 BFS vs DFS Explained"):
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("""
-            **BFS (Breadth-First Search)**
-            - Explores level by level
-            - Uses a **Queue** (FIFO)
-            - Finds path with fewest hops
-            - Time: O(V + E)
-            - ✅ Best for: "Fewest stops" delivery
-            """)
-        with col2:
-            st.markdown("""
-            **DFS (Depth-First Search)**
-            - Explores as deep as possible first
-            - Uses a **Stack** (recursion)
-            - Does NOT guarantee shortest path
-            - Time: O(V + E)
-            - ✅ Best for: Checking connectivity
-            """)
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# MST
-# ═══════════════════════════════════════════════════════════════════════════
-elif section == "🌲 Minimum Spanning Tree":
-    st.title("🌲 Minimum Spanning Tree — Kruskal's & Prim's")
-    st.markdown("Compare two greedy MST algorithms building the cheapest cable network connecting all 15 nodes.")
-
-    mst_tab1, mst_tab2 = st.tabs(["🔷 Kruskal's Algorithm", "🔶 Prim's Algorithm"])
-
-    with mst_tab1:
-        speed = st.selectbox("Speed", ["Slow","Medium","Fast"], index=1, key="k_speed")
-        delay = {"Slow":0.9,"Medium":0.45,"Fast":0.15}[speed]
-        run = st.button("▶ Run Kruskal's Animation", type="primary", key="k_run")
-
-        frames, mst, total = G.kruskal_animated()
-
-        graph_ph = st.empty()
-        log_ph   = st.empty()
-        metric_ph = st.columns(3)
-
-        traces = base_network_traces(G, mst_edges=mst, blocked=blocked_set)
-        graph_ph.plotly_chart(make_figure(traces, f"Kruskal's MST — Total: AED {total:.1f}K"), use_container_width=True)
-
-        metric_ph[0].metric("MST Edges", f"{len(mst)} edges")
-        metric_ph[1].metric("Total Cost", f"AED {total:.1f}K")
-        metric_ph[2].metric("All-edge Cost", f"AED {sum(c for *_,c in EDGES):.1f}K")
-
-        if run:
-            logs = []
-            for i, frame in enumerate(frames):
-                current_mst = frame['mst']
-                rej  = frame.get('rejected', [])
-                msg  = frame['msg']
-
-                traces = base_network_traces(G, mst_edges=current_mst,
-                    rejected_edges=rej, current=None, blocked=blocked_set)
-                graph_ph.plotly_chart(
-                    make_figure(traces, f"Kruskal Step {i+1}/{len(frames)}: {msg}"),
-                    use_container_width=True)
-                logs.append(msg)
-                with log_ph.container():
-                    for log in logs[-6:]:
-                        color = "step-box" if "ADD" in log else "warn-box"
-                        st.markdown(f'<div class="{color}">{log}</div>', unsafe_allow_html=True)
-                time.sleep(delay)
-            st.success(f"✅ Kruskal's MST complete! {len(mst)} edges. Total: AED {total:.1f}K")
-
-        if mst:
-            with st.expander("📋 Kruskal's MST Edges"):
-                st.table([{"From":u,"To":v,"Road":road,"Dist":f"{d}km","Time":f"{t}min","Cost":f"AED {c}k"} for u,v,road,d,t,c in mst])
-
-    with mst_tab2:
-        prim_start = st.selectbox("Start node", NODES, index=NODES.index('H2'), key="p_start")
-        p_speed = st.selectbox("Speed", ["Slow","Medium","Fast"], index=1, key="p_speed")
-        p_delay = {"Slow":0.9,"Medium":0.45,"Fast":0.15}[p_speed]
-        p_run = st.button("▶ Run Prim's Animation", type="primary", key="p_run")
-
-        p_frames, p_mst, p_total = G.prim_animated(start=prim_start)
-
-        p_graph_ph = st.empty()
-        p_log_ph   = st.empty()
-        p_metric_ph = st.columns(3)
-
-        p_traces = base_network_traces(G, mst_edges=p_mst, blocked=blocked_set)
-        p_graph_ph.plotly_chart(make_figure(p_traces, f"Prim's MST from {prim_start} — Total: AED {p_total:.1f}K"), use_container_width=True)
-
-        p_metric_ph[0].metric("MST Edges", f"{len(p_mst)} edges")
-        p_metric_ph[1].metric("Total Cost", f"AED {p_total:.1f}K")
-        p_metric_ph[2].metric("Kruskal's Cost", f"AED {total:.1f}K", delta="Same ✓" if abs(p_total - total) < 0.01 else f"Δ {p_total - total:.1f}")
-
-        if p_run:
-            p_logs = []
-            for i, frame in enumerate(p_frames):
-                p_cur_mst = frame['mst']
-                msg = frame['msg']
-                p_traces = base_network_traces(G, mst_edges=p_cur_mst, current=frame.get('current'), blocked=blocked_set)
-                p_graph_ph.plotly_chart(
-                    make_figure(p_traces, f"Prim Step {i+1}/{len(p_frames)}: {msg}"),
-                    use_container_width=True)
-                p_logs.append(msg)
-                with p_log_ph.container():
-                    for log in p_logs[-6:]:
-                        color = "step-box" if "ADD" in log else "warn-box"
-                        st.markdown(f'<div class="{color}">{log}</div>', unsafe_allow_html=True)
-                time.sleep(p_delay)
-            st.success(f"✅ Prim's MST complete! {len(p_mst)} edges. Total: AED {p_total:.1f}K")
-
-        if p_mst:
-            with st.expander("📋 Prim's MST Edges"):
-                st.table([{"From":u,"To":v,"Road":road,"Dist":f"{d}km","Time":f"{t}min","Cost":f"AED {c}k"} for u,v,road,d,t,c in p_mst])
-
-    with st.expander("📚 MST Algorithm Comparison"):
-        st.markdown("""
-        | Property | Kruskal's | Prim's |
-        |----------|-----------|--------|
-        | Strategy | Sort all edges, add if no cycle | Grow from start node, add cheapest edge |
-        | Time Complexity | O(E log E) | O(E log V) with min-heap |
-        | Best for | Sparse graphs | Dense graphs |
-        | Uses | Union-Find | Priority Queue |
-        | Guarantee | Same total cost | Same total cost |
-        | For WaselX (E=24) | Sorts 24 edges | Grows from 1 node |
-        """)
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# BST & AVL
-# ═══════════════════════════════════════════════════════════════════════════
-elif section == "🌳 BST & AVL Tree":
-    st.title("🌳 Binary Search Tree & AVL Tree")
-
-    tab1, tab2, tab3 = st.tabs(["🌳 Build BST","⚖️ AVL Balancing","🔍 Search Demo"])
-
-    ORDER_IDS = [1045,1023,1078,1012,1034,1056,1089,1005,1020,1067,1050,1098]
-
-    def build_bst(keys):
-        """Returns adjacency dict for tree drawing."""
-        class Node:
-            def __init__(self, k): self.k=k; self.l=None; self.r=None
-        root = None
-        def ins(node, k):
-            if not node: return Node(k)
-            if k < node.k: node.l = ins(node.l, k)
-            else: node.r = ins(node.r, k)
-            return node
-        for k in keys: root = ins(root, k)
-        return root
-
-    def tree_positions(root):
-        """BFS to get (node, x, y, parent) for plotting."""
-        if not root: return []
-        result = []
-        queue = deque([(root, 0, 0, None, 1.0)])
-        while queue:
-            node, x, y, parent, spread = queue.popleft()
-            result.append((node.k, x, y, parent))
-            if node.l: queue.append((node.l, x - spread, y - 1, node.k, spread/2))
-            if node.r: queue.append((node.r, x + spread, y - 1, node.k, spread/2))
-        return result
-
-    def plot_tree(positions, highlight=None, title="BST"):
-        fig = go.Figure()
-        pos_map = {k: (x, y) for k, x, y, _ in positions}
-        for k, x, y, parent in positions:
-            if parent is not None:
-                px2, py2 = pos_map[parent]
-                color = '#ff6b00' if k == highlight or parent == highlight else '#aaaaaa'
-                fig.add_trace(go.Scatter(x=[px2,x], y=[py2,y], mode='lines',
-                    line=dict(color=color, width=2), showlegend=False, hoverinfo='skip'))
-        for k, x, y, parent in positions:
-            color = '#ff6b00' if k == highlight else '#2E75B6'
-            fig.add_trace(go.Scatter(x=[x], y=[y], mode='markers+text',
-                marker=dict(size=36, color=color, line=dict(width=2,color='white')),
-                text=[str(k)], textfont=dict(size=10, color='white'),
-                textposition='middle center', hoverinfo='text',
-                hovertext=f"Order ID: {k}", showlegend=False))
-        fig.update_layout(title=title, height=400,
-            xaxis=dict(showgrid=False,zeroline=False,showticklabels=False),
-            yaxis=dict(showgrid=False,zeroline=False,showticklabels=False),
-            plot_bgcolor='#f8faff', paper_bgcolor='white',
-            margin=dict(l=10,r=10,t=40,b=10))
-        return fig
-
-    with tab1:
-        st.subheader("Build BST from Order IDs")
-        custom = st.text_input("Order IDs (comma-separated)", ",".join(map(str,ORDER_IDS)))
-        try:
-            keys = [int(x.strip()) for x in custom.split(",") if x.strip()]
-        except:
-            keys = ORDER_IDS
-
-        root = build_bst(keys)
-        pos  = tree_positions(root)
-        st.plotly_chart(plot_tree(pos, title=f"BST — {len(keys)} Nodes"), use_container_width=True)
-
-        col1, col2, col3 = st.columns(3)
-        def inorder(n):
-            if not n: return []
-            return inorder(n.l) + [n.k] + inorder(n.r)
-        def preorder(n):
-            if not n: return []
-            return [n.k] + preorder(n.l) + preorder(n.r)
-        def postorder(n):
-            if not n: return []
-            return postorder(n.l) + postorder(n.r) + [n.k]
-        def height(n):
-            if not n: return 0
-            return 1 + max(height(n.l), height(n.r))
-
-        col1.metric("Tree Height", height(root))
-        col2.metric("Nodes", len(keys))
-        col3.metric("Worst-case Search", f"O({height(root)})")
-
-        st.markdown(f"**In-order:** `{inorder(root)}`")
-        st.markdown(f"**Pre-order:** `{preorder(root)}`")
-        st.markdown(f"**Post-order:** `{postorder(root)}`")
-
-    with tab2:
-        st.subheader("AVL Tree Operations & Rotations")
-        st.markdown("AVL trees self-balance to guarantee `O(log n)` height. Watch rotations happen as nodes are inserted.")
-
-        avl_case = st.selectbox("Demonstrate Rotation Case:", ["LL (Right Rotation)", "RR (Left Rotation)", "LR (Left-Right Rotation)", "RL (Right-Left Rotation)"])
-
-        c1, c2 = st.columns(2)
-        with c1:
-            st.markdown("**Before Rotation (Imbalanced):**")
-            if "LL" in avl_case:
-                pos_before = [(1012, 0.5, 0, None), (1005, 0.25, -1, 1012), (1003, 0.125, -2, 1005)]
-                st.plotly_chart(plot_tree(pos_before, highlight=1012, title="Imbalance at 1012 (LL)"), use_container_width=True)
-            elif "RR" in avl_case:
-                pos_before = [(1078, 0.5, 0, None), (1089, 0.75, -1, 1078), (1098, 0.875, -2, 1089)]
-                st.plotly_chart(plot_tree(pos_before, highlight=1078, title="Imbalance at 1078 (RR)"), use_container_width=True)
-            elif "LR" in avl_case:
-                pos_before = [(1034, 0.5, 0, None), (1012, 0.25, -1, 1034), (1023, 0.375, -2, 1012)]
-                st.plotly_chart(plot_tree(pos_before, highlight=1034, title="Imbalance at 1034 (LR)"), use_container_width=True)
-            else: # RL
-                pos_before = [(1056, 0.5, 0, None), (1078, 0.75, -1, 1056), (1067, 0.625, -2, 1078)]
-                st.plotly_chart(plot_tree(pos_before, highlight=1056, title="Imbalance at 1056 (RL)"), use_container_width=True)
-        
-        with c2:
-            st.markdown("**After Rotation (Balanced):**")
-            if "LL" in avl_case:
-                pos_after = [(1005, 0.5, 0, None), (1003, 0.25, -1, 1005), (1012, 0.75, -1, 1005)]
-                st.plotly_chart(plot_tree(pos_after, title="Single Right Rotation"), use_container_width=True)
-                st.info("Fix: Single **Right Rotation** at 1012.")
-            elif "RR" in avl_case:
-                pos_after = [(1089, 0.5, 0, None), (1078, 0.25, -1, 1089), (1098, 0.75, -1, 1089)]
-                st.plotly_chart(plot_tree(pos_after, title="Single Left Rotation"), use_container_width=True)
-                st.info("Fix: Single **Left Rotation** at 1078.")
-            elif "LR" in avl_case:
-                pos_after = [(1023, 0.5, 0, None), (1012, 0.25, -1, 1023), (1034, 0.75, -1, 1023)]
-                st.plotly_chart(plot_tree(pos_after, title="Left-Right Rotation"), use_container_width=True)
-                st.info("Fix: **Left Rotation** at 1012, then **Right Rotation** at 1034.")
-            else: # RL
-                pos_after = [(1067, 0.5, 0, None), (1056, 0.25, -1, 1067), (1078, 0.75, -1, 1067)]
-                st.plotly_chart(plot_tree(pos_after, title="Right-Left Rotation"), use_container_width=True)
-                st.info("Fix: **Right Rotation** at 1078, then **Left Rotation** at 1056.")
-
-        st.markdown("---")
-        st.subheader("Height Comparison: BST vs AVL")
-        scenarios = {
-            "Original order": ORDER_IDS,
-            "Sorted (worst case)": sorted(ORDER_IDS),
-            "Reverse sorted": sorted(ORDER_IDS, reverse=True),
-        }
-        heights_bst = {}
-        for name, ks in scenarios.items():
-            heights_bst[name] = height(build_bst(ks))
-        avl_height = math.ceil(math.log2(len(ORDER_IDS)+1))
-
-        fig_comp = go.Figure()
-        fig_comp.add_bar(x=list(heights_bst.keys()), y=list(heights_bst.values()),
-                         name="BST Height", marker_color='#2E75B6')
-        fig_comp.add_bar(x=list(heights_bst.keys()), y=[avl_height]*3,
-                         name="AVL Height (guaranteed)", marker_color='#00b050')
-        fig_comp.update_layout(barmode='group', title="BST vs AVL Height by Insertion Order",
-                                height=300, yaxis_title="Tree Height")
-        st.plotly_chart(fig_comp, use_container_width=True)
-
-        st.info("💡 **AVL trees guarantee O(log n) height.** Sorted input makes a plain BST degrade to O(n) (a linked list), which is unacceptable for WaselX's 15,000 orders/day scale.")
-
-    with tab3:
-        st.subheader("🔍 Search & Deletion Demo")
-        
-        c_left, c_right = st.columns(2)
-        with c_left:
-            target = st.number_input("Search for Order ID", min_value=1000, max_value=9999,
-                                      value=1067, step=1)
-        with c_right:
-            delete_target = st.selectbox("Or Delete Node", [1005, 1012, 1023, 1056, 1078, 1045], index=4)
-            del_btn = st.button("🗑️ Delete Node", type="primary")
-
-        root_search = build_bst(ORDER_IDS)
-        
-        if del_btn:
-            st.markdown(f"**Deleting {delete_target}**")
-            # Determine deletion case for explanation
-            node_to_del = root_search
-            while node_to_del and node_to_del.k != delete_target:
-                if delete_target < node_to_del.k: node_to_del = node_to_del.l
-                else: node_to_del = node_to_del.r
-                
-            if node_to_del:
-                if not node_to_del.l and not node_to_del.r:
-                    case = "Leaf node (No children) — simply remove."
-                elif node_to_del.l and node_to_del.r:
-                    case = "Two children — replace with inorder successor (smallest in right subtree)."
-                else:
-                    case = "One child — bypass the node."
-                st.info(f"**Deletion Case:** {case}")
-                
-            def delete_node(root, key):
-                if not root: return root
-                if key < root.k: root.l = delete_node(root.l, key)
-                elif key > root.k: root.r = delete_node(root.r, key)
-                else:
-                    if not root.l: return root.r
-                    elif not root.r: return root.l
-                    temp = root.r
-                    while temp.l: temp = temp.l
-                    root.k = temp.k
-                    root.r = delete_node(root.r, temp.k)
-                return root
-            
-            root_search = delete_node(root_search, delete_target)
-            pos_after = tree_positions(root_search)
-            st.plotly_chart(plot_tree(pos_after, title=f"BST after deleting {delete_target}"), use_container_width=True)
-            st.success(f"Successfully deleted {delete_target}. Tree structure maintained.")
-
-        else:
-            path_search = []
-            node = root_search
-            found = False
-            while node:
-                path_search.append(node.k)
-                if node.k == target: found = True; break
-                elif target < node.k: node = node.l
-                else: node = node.r
-
-            pos_search = tree_positions(root_search)
-            for k in path_search:
-                st.plotly_chart(plot_tree(pos_search, highlight=k,
-                    title=f"Searching for {target} — Current: {k} ({'Found! ✅' if k==target else 'Go ' + ('left' if target<k else 'right') + ' ➡'})"),
-                    use_container_width=True)
-                if k == target: break
-
-            if found:
-                st.success(f"✅ Order {target} found! Path: {' → '.join(map(str,path_search))} | Comparisons: {len(path_search)}")
-            else:
-                st.error(f"❌ Order {target} not in BST. Comparisons made: {len(path_search)}")
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# PRIORITY QUEUE
-# ═══════════════════════════════════════════════════════════════════════════
-elif section == "📋 Priority Queue":
-    st.title("📋 Priority Queue — From-Scratch Min-Heap Dispatch Simulator")
-    st.markdown("Simulate WaselX's order dispatch system using a **from-scratch min-heap** (no `heapq`). VIP orders always go first!")
-
-    PRIORITY_NAMES = {1:"🚨 VIP Same-Hour", 2:"⚡ Express (2hr)", 3:"📦 Standard", 4:"🗓 Scheduled", 5:"🐢 Economy"}
-    PRIORITY_COLORS = {1:"#cc0000", 2:"#ff6b00", 3:"#2E75B6", 4:"#375623", 5:"#888"}
-
-    tab1, tab2 = st.tabs(["📥 Add Orders","📊 Heap Visualization"])
-
-    if "pq_mh" not in st.session_state:
-        st.session_state.pq_mh = MinHeap()
-        st.session_state.pq_log = []
-
-    mh = st.session_state.pq_mh
-
-    with tab1:
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            order_name = st.text_input("Order ID", f"ORD-{random.randint(100,999)}")
-        with col2:
-            priority = st.selectbox("Priority", [1,2,3,4,5],
-                format_func=lambda x: PRIORITY_NAMES[x])
-        with col3:
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("➕ Enqueue", type="primary"):
-                mh.push(priority, order_name)
-                st.session_state.pq_log.append(f"➕ Enqueued: {order_name} [{PRIORITY_NAMES[priority]}]")
-
-        col4, col5 = st.columns(2)
-        with col4:
-            if st.button("⬇️ Dequeue Next", disabled=not mh):
-                p, _, name = mh.pop()
-                st.session_state.pq_log.append(f"🚀 Dispatched: {name} [{PRIORITY_NAMES[p]}]")
-                st.success(f"Dispatched: **{name}** — {PRIORITY_NAMES[p]}")
-        with col5:
-            if st.button("🔄 Load Sample Batch"):
-                st.session_state.pq_mh = MinHeap()
-                mh = st.session_state.pq_mh
-                sample = [("A",3),("B",1),("C",4),("D",2),("E",1),("F",5),("G",2),("H",3),("I",1),("J",4)]
-                for name, p in sample:
-                    mh.push(p, f"Order-{name}")
-                st.session_state.pq_log.append("📥 Loaded 10-order sample batch (from-scratch MinHeap)")
-
-        if mh:
-            st.markdown("**Current Queue (sorted by priority):**")
-            sorted_view = mh.sorted_view()
-            for i, (p, cnt, name) in enumerate(sorted_view):
-                color = PRIORITY_COLORS[p]
-                st.markdown(f"<div style='background:{color}18;border-left:4px solid {color};"
-                            f"border-radius:4px;padding:6px 12px;margin:3px 0'>"
-                            f"<b>#{i+1}</b> {name} — {PRIORITY_NAMES[p]}</div>",
-                            unsafe_allow_html=True)
-        else:
-            st.info("Queue is empty. Add orders or load sample batch.")
-
-        if st.session_state.pq_log:
-            st.markdown("**Dispatch Log:**")
-            for log in reversed(st.session_state.pq_log[-8:]):
-                st.markdown(f'<div class="step-box">{log}</div>', unsafe_allow_html=True)
-
-        if st.button("🗑 Clear All"):
-            st.session_state.pq_mh = MinHeap()
-            st.session_state.pq_log = []
-
-    with tab2:
-        st.subheader("Min-Heap Tree Visualization (from-scratch)")
-        if mh:
-            heap_arr = mh.as_list()
-            n = len(heap_arr)
-            fig_heap = go.Figure()
-            positions = {}
-            for i in range(n):
-                level = int(math.log2(i+1))
-                pos_in_level = i - (2**level - 1)
-                total_in_level = 2**level
-                x = (pos_in_level + 0.5) / total_in_level
-                y = -level
-                positions[i] = (x, y)
-                if i > 0:
-                    parent = (i-1)//2
-                    px2, py2 = positions[parent]
-                    fig_heap.add_trace(go.Scatter(x=[px2,x],y=[py2,y],
-                        mode='lines', line=dict(color='#aaa',width=2),
-                        showlegend=False, hoverinfo='skip'))
-
-            for i, (p,cnt,name) in enumerate(heap_arr):
-                x, y = positions[i]
-                color = PRIORITY_COLORS[p]
-                fig_heap.add_trace(go.Scatter(x=[x],y=[y],
-                    mode='markers+text',
-                    marker=dict(size=40,color=color,line=dict(width=2,color='white')),
-                    text=[f"P{p}"],
-                    textfont=dict(size=11,color='white'),
-                    textposition='middle center',
-                    hovertext=f"{name}<br>{PRIORITY_NAMES[p]}",
-                    hoverinfo='text', showlegend=False))
-                fig_heap.add_trace(go.Scatter(x=[x],y=[y-0.18],
-                    mode='text', text=[name[:8]],
-                    textfont=dict(size=8,color='#333'),
-                    showlegend=False, hoverinfo='skip'))
-
-            fig_heap.update_layout(height=max(300, 100*int(math.log2(n+1)+1)),
-                xaxis=dict(showgrid=False,zeroline=False,showticklabels=False,range=[-0.05,1.05]),
-                yaxis=dict(showgrid=False,zeroline=False,showticklabels=False),
-                plot_bgcolor='#f8faff', paper_bgcolor='white',
-                title="From-Scratch Min-Heap (root = next to dispatch)",
-                margin=dict(l=10,r=10,t=40,b=10))
-            st.plotly_chart(fig_heap, use_container_width=True)
-            st.caption("✅ This heap uses our **from-scratch MinHeap** class with manual sift_up/sift_down — O(log n) per operation.")
-        else:
-            st.info("Add orders to see the heap visualization.")
-
-    with st.expander("📚 Min-Heap Implementation Details"):
-        st.markdown("""
-        **From-Scratch Min-Heap** (no `heapq` library)
-        
-        | Operation | Complexity | Method |
-        |-----------|-----------|--------|
-        | Enqueue (push) | O(log n) | Append + sift_up |
-        | Dequeue (pop) | O(log n) | Swap root with last + sift_down |
-        | Peek | O(1) | Read index 0 |
-        | For WaselX (3,500 orders) | log₂(3500) = 12 ops | Sub-millisecond |
-        """)
-        st.code("""
-class MinHeap:
-    def _sift_up(self, i):
-        while i > 0:
-            parent = (i - 1) // 2
-            if self._heap[i] < self._heap[parent]:
-                self._heap[i], self._heap[parent] = (
-                    self._heap[parent], self._heap[i])
-                i = parent
-            else: break
-
-    def _sift_down(self, i):
-        n = len(self._heap)
-        while True:
-            smallest = i
-            left, right = 2*i+1, 2*i+2
-            if left < n and self._heap[left] < self._heap[smallest]:
-                smallest = left
-            if right < n and self._heap[right] < self._heap[smallest]:
-                smallest = right
-            if smallest != i:
-                self._heap[i], self._heap[smallest] = (
-                    self._heap[smallest], self._heap[i])
-                i = smallest
-            else: break
-        """, language="python")
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# LINKED LIST
-# ═══════════════════════════════════════════════════════════════════════════
-elif section == "🔗 Linked List Simulator":
-    st.title("🔗 Doubly Linked List — Rider Route Simulator")
-    st.markdown("This uses our **from-scratch `DoublyLinkedList` class** to manage rider routes with O(1) insertions.")
-
-    if "dll_obj" not in st.session_state:
-        st.session_state.dll_obj = DoublyLinkedList()
-        initial_route = [
-            ("Dubai Marina Hub", "ORD001", "10:15"),
-            ("JLT", "ORD002", "10:30"),
-            ("Downtown Dubai", "ORD003", "10:50"),
-            ("Business Bay", "ORD004", "11:05"),
-            ("Deira", "ORD005", "11:25"),
-            ("Silicon Oasis", "ORD006", "11:50"),
-        ]
-        for stop, oid, eta in initial_route:
-            st.session_state.dll_obj.append(stop, oid, eta)
-        st.session_state.dll_log = ["Initial route loaded into DoublyLinkedList."]
-
-    dll = st.session_state.dll_obj
-
-    def draw_dll(dll_obj):
-        nodes = dll_obj.display_forward()
-        if not nodes: return go.Figure()
-        fig = go.Figure()
-        n = len(nodes)
-        for i, (stop, oid, eta) in enumerate(nodes):
-            x = i * 2
-            color = '#2E75B6' if 'Urgent' not in stop else '#cc0000'
-            fig.add_trace(go.Scatter(x=[x],y=[0],
-                mode='markers+text',
-                marker=dict(size=50,color=color,line=dict(width=2,color='white')),
-                text=[oid],textfont=dict(size=8,color='white'),
-                textposition='middle center',
-                hovertext=f"{stop}<br>{oid}<br>ETA: {eta}",
-                hoverinfo='text',showlegend=False))
-            fig.add_trace(go.Scatter(x=[x],y=[-0.22],mode='text',
-                text=[f"{stop[:12]}...{eta}" if len(stop)>12 else f"{stop}\n{eta}"],
-                textfont=dict(size=8,color='#333'),
-                showlegend=False,hoverinfo='skip'))
-            if i < n-1:
-                fig.add_trace(go.Scatter(x=[x+0.3,x+1.7],y=[0,0],
-                    mode='lines+text',
-                    line=dict(color='#2E75B6',width=2),
-                    text=["","⇄"],textposition='middle center',
-                    textfont=dict(size=14,color='#2E75B6'),
-                    showlegend=False,hoverinfo='skip'))
-        fig.update_layout(height=200,
-            xaxis=dict(showgrid=False,zeroline=False,showticklabels=False,range=[-0.5,n*2-0.5]),
-            yaxis=dict(showgrid=False,zeroline=False,showticklabels=False,range=[-0.6,0.4]),
-            plot_bgcolor='#f8faff',paper_bgcolor='white',
-            margin=dict(l=10,r=10,t=10,b=10))
-        return fig
-
-    st.plotly_chart(draw_dll(dll), use_container_width=True)
-
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown("**➕ Insert Urgent Order**")
-        nodes_list = dll.display_forward()
-        if nodes_list:
-            after_target = st.selectbox("Insert after order:", [oid for _, oid, _ in nodes_list])
-            new_stop = st.text_input("Stop name", "Al Quoz (Urgent)")
-            new_oid  = st.text_input("Order ID", f"ORD-URG-{random.randint(10,99)}")
-            new_eta  = st.text_input("ETA", "11:00")
-            if st.button("➕ Insert", type="primary"):
-                dll.insert_after(after_target, new_stop, new_oid, new_eta)
-                st.session_state.dll_log.append(f"Inserted {new_oid} after {after_target} in O(1)")
-                st.rerun()
-
-    with col2:
-        st.markdown("**🗑 Cancel Order**")
-        nodes_list = dll.display_forward()
-        if nodes_list:
-            cancel_target = st.selectbox("Cancel order:", [oid for _, oid, _ in nodes_list])
-            if st.button("🗑 Remove"):
-                removed_node = dll.delete_by_order_id(cancel_target)
-                if removed_node:
-                    st.session_state.dll_log.append(f"Removed {cancel_target} ({removed_node.stop_name}) in O(1)")
-                    st.rerun()
-
-    with col3:
-        st.markdown("**📋 Route Operations**")
-        if st.button("↩ Reset to Default"):
-            del st.session_state["dll_obj"]
-            st.rerun()
-        if st.button("⬆ Move first stop to end"):
-            if len(dll) > 1:
-                first_oid = dll.head.order_id
-                dll.move_first_to_end()
-                st.session_state.dll_log.append(f"Moved {first_oid} to end of route in O(1)")
-                st.rerun()
-        if st.button("⏪ Display Reverse (Audit)"):
-            rev = dll.display_reverse()
-            st.session_state.dll_log.append(f"Reverse audit: {' -> '.join(oid for _, oid, _ in rev)}")
-
-    st.markdown("**Operation Log:**")
-    for log in reversed(st.session_state.dll_log[-5:]):
-        st.markdown(f'<div class="step-box">{log}</div>', unsafe_allow_html=True)
-
-    with st.expander("📚 Why Doubly Linked List?"):
-        st.markdown("""
-        **Doubly Linked List** (Implemented from scratch)
-        
-        | Operation | Array | Doubly Linked List |
-        |-----------|-------|-------------------|
-        | Insert mid-route | O(n) — shift all elements | **O(1)** — relink pointers |
-        | Delete any stop | O(n) — shift all elements | **O(1)** — relink pointers |
-        | Traverse forward | O(n) | O(n) |
-        | Traverse backward | O(n) | **O(n) via prev pointers** |
-        
-        For delivery routes where urgent insertions and cancellations happen frequently, 
-        the DLL's O(1) insert/delete far outweighs the O(1) random access of arrays.
-        """)
-
-# ═══════════════════════════════════════════════════════════════════════════
-# CIRCULAR LINKED LIST
-# ═══════════════════════════════════════════════════════════════════════════
-elif section == "🔄 Circular Linked List":
-    st.title("🔄 Circular Linked List — Round-Robin Rider Assignment")
-    st.markdown("Using our **from-scratch `CircularLinkedList`** to fairly distribute orders to riders.")
-
-    if "cll" not in st.session_state:
-        st.session_state.cll = CircularLinkedList()
-        for i in range(1, 9):
-            st.session_state.cll.add_rider(f"Rider {i}")
-        st.session_state.cll_log = []
-        st.session_state.cll_order_cnt = 1
-
-    cll = st.session_state.cll
-
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        st.subheader("Assign Incoming Orders")
-        if st.button("📦 Assign Next Order", type="primary"):
-            rider = cll.assign_next_order()
-            if rider:
-                oid = f"Order {st.session_state.cll_order_cnt}"
-                st.session_state.cll_order_cnt += 1
-                st.session_state.cll_log.append(f"Assigned {oid} ➔ **{rider}**")
-            else:
-                st.error("No riders available!")
-        
-        if st.button("📦 Assign 5 Orders"):
-            for _ in range(5):
-                rider = cll.assign_next_order()
-                if rider:
-                    oid = f"Order {st.session_state.cll_order_cnt}"
-                    st.session_state.cll_order_cnt += 1
-                    st.session_state.cll_log.append(f"Assigned {oid} ➔ **{rider}**")
-
-        st.markdown("**Assignment Log:**")
-        for log in reversed(st.session_state.cll_log[-10:]):
-            st.markdown(f'<div class="step-box">{log}</div>', unsafe_allow_html=True)
-
-    with col2:
-        st.subheader("Manage Riders")
-        roster = cll.display_roster()
-        st.markdown("**Current Roster (Order of assignment):**")
-        for r in roster:
-            is_next = cll._current and cll._current.rider_name == r
-            if is_next:
-                st.markdown(f"🟢 **{r}** (Next)")
-            else:
-                st.markdown(f"⚪ {r}")
-                
-        if roster:
-            to_remove = st.selectbox("Rider going on break:", roster)
-            if st.button("⏸️ Remove Rider"):
-                cll.remove_rider(to_remove)
-                st.session_state.cll_log.append(f"⏸️ **{to_remove}** went on break (removed from ring)")
-                st.rerun()
-
-        if st.button("↩ Reset Demo (8 Riders)"):
-            del st.session_state["cll"]
-            st.rerun()
-
-    with st.expander("📚 Circular Linked List Details"):
-        st.markdown("""
-        **Circular Linked List**
-        
-        - The `tail` node's `next` pointer points back to the `head`
-        - Enables infinite traversal without index bounds checking
-        - `assign_next_order()` simply reads the current rider and moves the pointer: `current = current.next`
-        - Perfect data structure for fair, round-robin resource allocation.
-        """)
-
-# ═══════════════════════════════════════════════════════════════════════════
-# STACK LIFECYCLE
-# ═══════════════════════════════════════════════════════════════════════════
-elif section == "📦 Order Lifecycle Stack":
-    st.title("📦 Stack — Order Lifecycle Tracking")
-    st.markdown("Track an order's lifecycle using a LIFO (Last-In-First-Out) Stack. Allows instant 'Undo' of the last status change.")
-
-    if "stack_obj" not in st.session_state:
-        st.session_state.stack_obj = Stack()
-        st.session_state.stack_obj.push("Received")
-
-    stack = st.session_state.stack_obj
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.subheader("Update Status")
-        
-        current_state = stack.peek()
-        st.metric("Current Status", current_state if current_state else "Empty")
-        
-        next_logical = {"Received": "Confirmed", "Confirmed": "Preparing", 
-                        "Preparing": "Dispatched", "Dispatched": "In Transit", 
-                        "In Transit": "Delivered", "Delivered": "Done"}
-        
-        suggested = next_logical.get(current_state, "")
-        
-        new_status = st.text_input("New Status", value=suggested if suggested != "Done" else "")
-        
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button("⬆️ Push Status", type="primary") and new_status:
-                stack.push(new_status)
-                st.rerun()
-        with c2:
-            if st.button("⏪ Undo (Pop)", disabled=len(stack)<=1):
-                removed = stack.pop()
-                st.toast(f"Undid '{removed}'. Reverted to '{stack.peek()}'")
-                st.rerun()
-                
-        if st.button("🗑 Reset Order"):
-            st.session_state.stack_obj = Stack()
-            st.session_state.stack_obj.push("Received")
-            st.rerun()
-
-    with col2:
-        st.subheader("Stack Visualizer (LIFO)")
-        items = stack.display() # Returns top-to-bottom
-        
-        for i, item in enumerate(items):
-            if i == 0:
-                # Top of stack
-                st.markdown(f"""
-                <div style='background:#2E75B6; color:white; padding:15px; margin:5px 0; border-radius:8px; text-align:center; font-weight:bold; border: 2px solid #1F4E79; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
-                    {item} (TOP)
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                opacity = max(0.4, 1.0 - (i * 0.15))
-                st.markdown(f"""
-                <div style='background:rgba(46, 117, 182, {opacity}); color:white; padding:10px; margin:5px 10px; border-radius:6px; text-align:center;'>
-                    {item}
-                </div>
-                """, unsafe_allow_html=True)
-
-    with st.expander("📚 Stack Applications"):
-        st.markdown("""
-        **Stack (LIFO)**
-        
-        - **Push**: Add new status `O(1)`
-        - **Pop**: Remove last status (Undo) `O(1)`
-        - **Peek**: Check current status `O(1)`
-        
-        Used heavily in state machines, browser history, and undo features.
-        """)
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# SORTING BENCHMARK
-# ═══════════════════════════════════════════════════════════════════════════
-elif section == "📊 Sorting Benchmark":
-    st.title("📊 Sorting Algorithm Benchmark")
-    st.markdown("Compare Merge Sort vs Quick Sort performance at WaselX scale.")
-
-    def merge_sort(arr):
-        if len(arr) <= 1: return arr
-        m = len(arr)//2
-        l, r = merge_sort(arr[:m]), merge_sort(arr[m:])
-        res = []; i = j = 0
-        while i < len(l) and j < len(r):
-            if l[i] <= r[j]: res.append(l[i]); i+=1
-            else: res.append(r[j]); j+=1
-        return res + l[i:] + r[j:]
-
-    def quick_sort(arr):
-        if len(arr) <= 1: return arr
-        pivot = arr[len(arr)//2]
-        left   = [x for x in arr if x < pivot]
-        middle = [x for x in arr if x == pivot]
-        right  = [x for x in arr if x > pivot]
-        return quick_sort(left) + middle + quick_sort(right)
-
-    tab1, tab2 = st.tabs(["⏱ Performance Chart","🎞 Step-by-Step Visualization"])
-
-    with tab1:
-        col1, col2 = st.columns(2)
-        with col1:
-            sizes = st.multiselect("Dataset sizes",
-                [100,500,1000,5000,10000,50000],
-                default=[100,500,1000,5000,10000])
-            data_type = st.radio("Data distribution",
-                ["Random","Sorted (60% pre-sorted)","Reverse sorted","Nearly sorted"])
-
-        with col2:
-            runs = st.slider("Runs per size (averaged)", 1, 5, 2)
-
-        if st.button("▶ Run Benchmark", type="primary"):
-            ms_times, qs_times = [], []
-            progress = st.progress(0)
-            total_steps = len(sizes) * runs * 2
-
-            step = 0
-            for sz in sizes:
-                ms_t, qs_t = [], []
-                for _ in range(runs):
-                    if data_type == "Random":
-                        data = [random.randint(1,100000) for _ in range(sz)]
-                    elif data_type == "Sorted (60% pre-sorted)":
-                        data = list(range(int(sz*0.6))) + [random.randint(0,sz) for _ in range(sz-int(sz*0.6))]
-                    elif data_type == "Reverse sorted":
-                        data = list(range(sz, 0, -1))
-                    else:
-                        data = list(range(sz)); random.shuffle(data[:sz//10])
-
-                    t0 = time.perf_counter()
-                    merge_sort(data[:])
-                    ms_t.append(time.perf_counter()-t0)
-                    step += 1; progress.progress(step/total_steps)
-
-                    t0 = time.perf_counter()
-                    import sys; sys.setrecursionlimit(max(10000, sz*2))
-                    quick_sort(data[:])
-                    qs_t.append(time.perf_counter()-t0)
-                    step += 1; progress.progress(step/total_steps)
-
-                ms_times.append(sum(ms_t)/len(ms_t)*1000)
-                qs_times.append(sum(qs_t)/len(qs_t)*1000)
-
-            fig = go.Figure()
-            fig.add_scatter(x=sizes, y=ms_times, mode='lines+markers',
-                name='Merge Sort', line=dict(color='#2E75B6', width=3),
-                marker=dict(size=10))
-            fig.add_scatter(x=sizes, y=qs_times, mode='lines+markers',
-                name='Quick Sort', line=dict(color='#ff6b00', width=3),
-                marker=dict(size=10))
-            fig.update_layout(title="Merge Sort vs Quick Sort — Execution Time",
-                xaxis_title="Dataset Size (n)", yaxis_title="Time (ms)",
-                height=400, legend=dict(x=0.02, y=0.98))
-            st.plotly_chart(fig, use_container_width=True)
-
-            results = [{"Size":s,"Merge Sort (ms)":f"{ms:.3f}","Quick Sort (ms)":f"{qs:.3f}",
-                        "Winner":"Merge Sort" if ms<qs else "Quick Sort"}
-                       for s,ms,qs in zip(sizes,ms_times,qs_times)]
-            st.table(results)
-
-    with tab2:
-        st.subheader("Visualize Sorting Steps (Q18 Dataset)")
-        st.markdown("Sorting the specific 15-order subset as required by the assignment:")
-        q18_dataset = "1056, 1078, 1023, 1089, 1045, 1012, 1067, 1034, 1098, 1005, 1028, 1082, 1015, 1062, 1073"
-        arr_input = st.text_input("Enter numbers (comma-separated)", q18_dataset)
-        try:
-            arr = [int(x.strip()) for x in arr_input.split(",")]
-        except:
-            arr = [int(x.strip()) for x in q18_dataset.split(",")]
-
-        sort_algo = st.radio("Algorithm", ["Merge Sort","Bubble Sort (visual)"], horizontal=True)
-
-        def get_bubble_steps(arr):
-            arr = arr[:]
-            steps = [arr[:]]
-            n = len(arr)
-            for i in range(n):
-                for j in range(n-i-1):
-                    if arr[j] > arr[j+1]:
-                        arr[j], arr[j+1] = arr[j+1], arr[j]
-                        steps.append(arr[:])
-            return steps
-
-        def get_merge_levels(arr):
-            """Get the merge sort levels for visualization."""
-            if len(arr) <= 1: return [[arr]]
-            levels = [[arr[:]]]
-            def split(a, depth=0):
-                if len(a) <= 1: return
-                m = len(a)//2
-                if depth+1 >= len(levels): levels.append([])
-                levels[depth+1].extend([a[:m], a[m:]])
-                split(a[:m], depth+1)
-                split(a[m:], depth+1)
-            split(arr)
-            return levels
-
-        if sort_algo == "Bubble Sort (visual)":
-            steps = get_bubble_steps(arr)
-            step_idx = st.slider("Step", 0, len(steps)-1, 0)
-            current = steps[step_idx]
-            fig = go.Figure(go.Bar(x=list(range(len(current))), y=current,
-                marker_color=['#ff6b00' if i==step_idx%len(current) or i==(step_idx+1)%len(current)
-                              else '#2E75B6' for i in range(len(current))]))
-            fig.update_layout(title=f"Bubble Sort — Step {step_idx}/{len(steps)-1}",
-                height=300, showlegend=False)
-            st.plotly_chart(fig, use_container_width=True)
-            st.caption(f"Array: {current}")
-        else:
-            levels = get_merge_levels(arr)
-            st.markdown(f"**Merge Sort on:** `{arr}`")
-            for i, level in enumerate(levels):
-                st.markdown(f"**Level {i} — {len(level)} subarray(s):**")
-                cols = st.columns(len(level))
-                for col, sub in zip(cols, level):
-                    with col:
-                        fig = go.Figure(go.Bar(x=list(range(len(sub))), y=sub,
-                            marker_color='#2E75B6'))
-                        fig.update_layout(height=100, margin=dict(l=2,r=2,t=2,b=2),
-                            showlegend=False,
-                            xaxis=dict(showticklabels=False), yaxis=dict(showticklabels=False))
-                        st.plotly_chart(fig, use_container_width=True)
-                        st.caption(f"`{sub}`")
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# BINARY SEARCH
-# ═══════════════════════════════════════════════════════════════════════════
-elif section == "🔍 Binary Search Demo":
-    st.title("🔍 Binary Search vs Linear Search")
-    st.markdown("Watch how binary search eliminates half the search space each step — vs. linear search checking one by one. (Q19 Assignment Dataset: IDs 10001 to 11000)")
-
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("**Dataset:** `[10001, 10002, ..., 11000]` (1,000 orders)")
-        arr_size = 1000
-        start_id = 10001
-        arr = list(range(start_id, start_id + arr_size))
-    with col2:
-        target = st.number_input("Search target (Q19 target: 10347)", min_value=10001, max_value=11000, value=10347)
-
-    # Binary search steps
-    bs_steps = []
-    lo, hi = 0, len(arr)-1
-    while lo <= hi:
-        mid = (lo+hi)//2
-        bs_steps.append((lo, mid, hi))
-        if arr[mid] == target: break
-        elif arr[mid] < target: lo = mid+1
-        else: hi = mid-1
-    found_bs = arr[bs_steps[-1][1]] == target if bs_steps else False
-
-    # Linear search steps
-    target_idx = target - start_id
-    ls_comps = target_idx + 1 if 0 <= target_idx < arr_size else arr_size
-
-    step_bs = st.slider("Binary Search Step", 0, len(bs_steps)-1, len(bs_steps)-1) if bs_steps else 0
-
-    if bs_steps:
-        lo_s, mid_s, hi_s = bs_steps[step_bs]
-        colors_bs = []
-        for i in range(arr_size):
-            if i == mid_s: colors_bs.append('#ff6b00')
-            elif lo_s <= i <= hi_s: colors_bs.append('#2E75B6')
-            else: colors_bs.append('#dddddd')
-
-        fig_bs = go.Figure()
-        # Sub-sample for visual clarity (Plotly struggles with 1000 thin bars)
-        sample_step = max(1, arr_size // 100)
-        vis_indices = list(range(0, arr_size, sample_step))
-        # Ensure mid_s is in vis_indices
-        if mid_s not in vis_indices:
-            vis_indices.append(mid_s)
-            vis_indices.sort()
-            
-        vis_x = [arr[i] for i in vis_indices]
-        vis_colors = [colors_bs[i] for i in vis_indices]
-        
-        fig_bs.add_bar(x=vis_x, y=[1]*len(vis_x),
-            marker_color=vis_colors,
-            hovertext=[f"Value: {v}" for v in vis_x], hoverinfo='text')
-        fig_bs.add_vline(x=arr[mid_s], line_color='#ff6b00', line_width=3,
-            annotation_text=f"mid={arr[mid_s]}", annotation_position="top")
-        fig_bs.update_layout(title=f"Binary Search — Step {step_bs+1}/{len(bs_steps)} | Search space: [{arr[lo_s]}..{arr[hi_s]}] | Checking: {arr[mid_s]}",
-            height=220, showlegend=False,
-            xaxis_title="Order ID", yaxis=dict(showticklabels=False),
-            margin=dict(l=10,r=10,t=50,b=30))
-        st.plotly_chart(fig_bs, use_container_width=True)
-
-    # Linear search
-    colors_ls = ['#00b050' if i == target_idx else '#ff4444' if i < target_idx else '#dddddd' for i in vis_indices]
-    fig_ls = go.Figure()
-    fig_ls.add_bar(x=vis_x, y=[1]*len(vis_x), marker_color=colors_ls)
-    fig_ls.update_layout(title=f"Linear Search — Checks every element from left | Comparisons: {ls_comps}",
-        height=180, showlegend=False,
-        xaxis_title="Order ID", yaxis=dict(showticklabels=False),
-        margin=dict(l=10,r=10,t=50,b=30))
-    st.plotly_chart(fig_ls, use_container_width=True)
-
-    # Stats
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Binary Search Comparisons", len(bs_steps))
-    col2.metric("Linear Search Comparisons", ls_comps)
-    col3.metric("Binary Search Faster by", f"{ls_comps - len(bs_steps)}x fewer" if len(bs_steps) > 0 else "N/A")
-
-    # Scale simulation
-    st.markdown("---")
-    st.subheader("📈 At WaselX Scale — 500 calls/day")
-    sizes_demo = [100, 500, 1000, 3500, 10000, 50000]
-    bs_comps = [math.ceil(math.log2(n)) for n in sizes_demo]
-    ls_comps_demo = [n//2 for n in sizes_demo]  # average case
-
-    fig_scale = go.Figure()
-    fig_scale.add_scatter(x=sizes_demo, y=bs_comps, mode='lines+markers',
-        name='Binary Search O(log n)', line=dict(color='#00b050', width=3),
-        marker=dict(size=10))
-    fig_scale.add_scatter(x=sizes_demo, y=ls_comps_demo, mode='lines+markers',
-        name='Linear Search O(n)', line=dict(color='#cc0000', width=3),
-        marker=dict(size=10))
-    fig_scale.update_layout(title="Comparisons vs Array Size — Exponential Divergence",
-        xaxis_title="Orders in Database", yaxis_title="Avg Comparisons per Lookup",
-        height=350)
-    st.plotly_chart(fig_scale, use_container_width=True)
-
+def page_overview(st: Any, go: Any, pd: Any, graph: WaselGraph, blocked: List[Tuple[str, str]]) -> None:
     st.markdown("""
-    | Array Size | Binary Search | Linear Search | Daily Saving (500 calls) |
-    |------------|--------------|--------------|--------------------------|
-    | 100 | 7 | 50 | 21,500 comparisons/day |
-    | 3,500 (current) | 12 | 1,750 | 869,000 comparisons/day |
-    | 15,000 (scaled) | 14 | 7,500 | 3,743,000 comparisons/day |
-    """)
+    <div class="hero">
+      <h1>🚚 WaselX Express</h1>
+      <p>Professional Data Structures & Algorithms Prototype for UAE Last-Mile Delivery Optimization</p>
+    </div>
+    """, unsafe_allow_html=True)
+    cols = st.columns(4)
+    metrics = [("15", "Network Nodes"), ("24", "Road Edges"), ("3,500", "Daily Orders"), ("5", "Task Areas")]
+    for col, (value, label) in zip(cols, metrics):
+        col.markdown(f"<div class='metric-card'><h2>{value}</h2><p>{label}</p></div>", unsafe_allow_html=True)
+    st.plotly_chart(network_figure(go, graph, "WaselX UAE Operating Network", blocked_edges=blocked), use_container_width=True)
+    c1, c2 = st.columns(2)
+    with c1:
+        st.subheader("Business Problems")
+        st.table(pd.DataFrame([
+            ["Inefficient routes", "23% extra rider distance", "Dijkstra + path simulator"],
+            ["Slow dispatch", "8-minute manual sorting delay", "From-scratch min-heap priority queue"],
+            ["Poor lookup", "45-second support lookup", "AVL tree order index"],
+        ], columns=["Challenge", "Impact", "DSA Solution"]))
+    with c2:
+        st.subheader("Readiness Notes")
+        comps = graph.connected_components()
+        if len(comps) > 1:
+            st.markdown(f"<div class='warn'><b>Important:</b> The supplied network is disconnected into {len(comps)} components. Routing from Dubai/Sharjah/Ajman to Abu Dhabi is impossible unless a new inter-emirate edge is added.</div>", unsafe_allow_html=True)
+        st.markdown("<div class='success'>The cleaned prototype removes unused dependencies, fixes path simulator errors, uses custom heap/queue structures, and handles road closures safely.</div>", unsafe_allow_html=True)
 
-# ═══════════════════════════════════════════════════════════════════════════
-# PEAK HOUR D&C
-# ═══════════════════════════════════════════════════════════════════════════
-elif section == "⏰ Peak Hour Finder":
-    st.title("⏰ Peak Hour Finder — Divide & Conquer")
-    st.markdown("Analyze 6,000 order timestamps to find the peak activity hour during Ramadan, using a Divide & Conquer approach (Q20 requirement).")
 
-    # Generate synthetic Ramadan data (peak around sunset/Iftar ~18:00)
-    @st.cache_data
-    def generate_ramadan_data():
-        hours = list(range(24))
-        # Base volume
-        counts = [random.randint(50, 150) for _ in range(24)]
-        # Iftar peak
-        counts[17] = random.randint(300, 400)
-        counts[18] = random.randint(600, 800)
-        counts[19] = random.randint(400, 500)
-        # Suhoor peak
-        counts[3] = random.randint(200, 300)
-        counts[4] = random.randint(250, 350)
-        
-        # Adjust total to exactly 6000
-        current_total = sum(counts)
-        ratio = 6000 / current_total
-        counts = [int(c * ratio) for c in counts]
-        diff = 6000 - sum(counts)
-        counts[18] += diff
-        
-        return counts
+def page_network(st: Any, go: Any, pd: Any, graph: WaselGraph, blocked: List[Tuple[str, str]]) -> None:
+    st.title("Network Explorer")
+    tab1, tab2, tab3, tab4 = st.tabs(["Map", "Adjacency List", "Adjacency Matrix", "Connectivity"])
+    with tab1:
+        node = st.selectbox("Highlight node", ["None"] + graph.nodes)
+        path = [node] if node != "None" else []
+        st.plotly_chart(network_figure(go, graph, "Network Map", highlight_path=path, blocked_edges=blocked), use_container_width=True)
+    with tab2:
+        st.dataframe(pd.DataFrame(graph.adjacency_list_rows()), use_container_width=True, hide_index=True)
+    with tab3:
+        criterion = st.selectbox("Weight", ["distance", "time", "cost"], key="matrix_weight")
+        st.dataframe(matrix_to_dataframe(pd, graph.nodes, graph.adjacency_matrix(criterion)), use_container_width=True)
+        st.caption("INF means no direct road segment exists between the two locations.")
+    with tab4:
+        comps = graph.connected_components()
+        st.write(f"Connected components: {len(comps)}")
+        for i, comp in enumerate(comps, start=1):
+            st.markdown(f"**Component {i}:** {', '.join(comp)}")
+        if len(comps) > 1:
+            st.warning("This matters for Q6/Q7/Q4: H5/H6/D6/D7 are isolated from the Dubai-Sharjah-Ajman component in the given edge table.")
 
-    hourly_counts = generate_ramadan_data()
 
-    def find_peak_dc(arr, low, high):
-        """Divide & Conquer to find a peak (element >= neighbors)."""
-        if low == high:
-            return low, arr[low]
-            
-        mid = (low + high) // 2
-        
-        if (mid == 0 or arr[mid] >= arr[mid-1]) and (mid == len(arr)-1 or arr[mid] >= arr[mid+1]):
-            return mid, arr[mid]
-            
-        if mid > 0 and arr[mid-1] > arr[mid]:
-            return find_peak_dc(arr, low, mid - 1)
+def page_pathfinder(st: Any, go: Any, pd: Any, graph: WaselGraph, blocked: List[Tuple[str, str]]) -> None:
+    st.title("Dijkstra Path Simulator")
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        source = st.selectbox("Source", graph.nodes, index=0)
+    with c2:
+        destination = st.selectbox("Destination", graph.nodes, index=graph.nodes.index("D1"))
+    with c3:
+        criterion = st.selectbox("Optimize for", ["distance", "time", "cost"])
+
+    result = graph.dijkstra(source, destination, criterion)
+    metrics = result["metrics"]
+    st.plotly_chart(network_figure(go, graph, f"Optimal path by {criterion}: {path_to_string(result['path'])}", result["path"], blocked_edges=blocked), use_container_width=True)
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Path", path_to_string(result["path"]))
+    m2.metric("Distance", f"{format_number(metrics['distance'])} km")
+    m3.metric("Time", f"{format_number(metrics['time'])} min")
+    m4.metric("Cost", f"AED {format_number(metrics['cost'])}")
+
+    tabs = st.tabs(["Step Trace", "All Criteria", "Road Closure Comparison"])
+    with tabs[0]:
+        trace_rows = []
+        for row in result["trace"]:
+            trace_rows.append({
+                "Step": row["step"],
+                "Action": row["action"],
+                "Visited": ", ".join(row.get("visited", [])),
+            })
+        st.dataframe(pd.DataFrame(trace_rows), use_container_width=True, hide_index=True)
+    with tabs[1]:
+        rows = []
+        for crit in ["distance", "time", "cost"]:
+            r = graph.dijkstra(source, destination, crit)
+            met = r["metrics"]
+            rows.append({"Criterion": crit, "Path": path_to_string(r["path"]), "Distance": met["distance"], "Time": met["time"], "Cost": met["cost"]})
+        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+    with tabs[2]:
+        edge_labels = {f"{u}-{v} ({road})": (u, v) for u, v, road, *_ in EDGES}
+        selected = st.selectbox("Temporarily block one road", ["None"] + list(edge_labels.keys()))
+        if selected == "None":
+            st.info("Select a road to compare original vs rerouted results.")
         else:
-            return find_peak_dc(arr, mid + 1, high)
+            closure = [edge_labels[selected]]
+            closure_graph = WaselGraph(blocked_edges=list(blocked) + closure)
+            original = graph.dijkstra(source, destination, criterion)
+            rerouted = closure_graph.dijkstra(source, destination, criterion)
+            left, right = st.columns(2)
+            with left:
+                st.plotly_chart(network_figure(go, graph, "Original", original["path"], blocked_edges=blocked), use_container_width=True)
+                st.write(path_to_string(original["path"]))
+            with right:
+                st.plotly_chart(network_figure(go, closure_graph, "Rerouted", rerouted["path"], blocked_edges=list(blocked)+closure), use_container_width=True)
+                st.write(path_to_string(rerouted["path"]))
+            o, r = original["metrics"], rerouted["metrics"]
+            comparison = pd.DataFrame([
+                ["Original", path_to_string(original["path"]), o["distance"], o["time"], o["cost"]],
+                ["Rerouted", path_to_string(rerouted["path"]), r["distance"], r["time"], r["cost"]],
+                ["Delta", "", r["distance"]-o["distance"] if not isinf(r["distance"]) else INF, r["time"]-o["time"] if not isinf(r["time"]) else INF, r["cost"]-o["cost"] if not isinf(r["cost"]) else INF],
+            ], columns=["Case", "Path", "Distance", "Time", "Cost"])
+            st.dataframe(comparison, use_container_width=True, hide_index=True)
 
-    def find_peak_linear(arr):
-        max_val = max(arr)
-        max_idx = arr.index(max_val)
-        return max_idx, max_val
 
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("Results")
-        if st.button("🔍 Find Peak Hour", type="primary"):
-            t0 = time.perf_counter()
-            dc_idx, dc_val = find_peak_dc(hourly_counts, 0, len(hourly_counts)-1)
-            dc_time = time.perf_counter() - t0
-            
-            t0 = time.perf_counter()
-            lin_idx, lin_val = find_peak_linear(hourly_counts)
-            lin_time = time.perf_counter() - t0
-            
-            st.success(f"**Divide & Conquer Found:** Hour {dc_idx}:00 with {dc_val} orders")
-            st.info(f"**Linear Search Found:** Hour {lin_idx}:00 with {lin_val} orders")
-            
-            c1, c2 = st.columns(2)
-            c1.metric("D&C Time", f"{dc_time*1000000:.1f} µs")
-            c2.metric("Linear Time", f"{lin_time*1000000:.1f} µs")
-            
-            if dc_val != lin_val:
-                st.warning("⚠️ Note: D&C finds *a* local peak, while Linear scan finds the *global* peak. On this bimodal (Iftar/Suhoor) distribution, D&C might lock onto the Suhoor peak if it searches that half first!")
+def page_floyd(st: Any, go: Any, pd: Any, graph: WaselGraph) -> None:
+    st.title("Floyd-Warshall All-Pairs Shortest Paths")
+    criterion = st.selectbox("Weight", ["time", "distance", "cost"], key="fw_weight")
+    scope = st.radio("Scope", ["Hubs only (H1-H7)", "All nodes"], horizontal=True)
+    nodes = [n for n in graph.nodes if n.startswith("H")] if scope.startswith("Hubs") else graph.nodes
+    result = graph.floyd_warshall(nodes, criterion)
+    tab1, tab2, tab3 = st.tabs(["Initial Matrix", "Final Matrix", "New Edge Scenario"])
+    with tab1:
+        st.dataframe(matrix_to_dataframe(pd, nodes, result["initial"]), use_container_width=True)
+    with tab2:
+        st.dataframe(matrix_to_dataframe(pd, nodes, result["final"]), use_container_width=True)
+        final = result["final"]
+        finite_pairs = [(nodes[i], nodes[j], final[i][j]) for i in range(len(nodes)) for j in range(i+1, len(nodes)) if not isinf(final[i][j])]
+        if finite_pairs:
+            farthest = max(finite_pairs, key=lambda x: x[2])
+            st.metric("Farthest reachable pair", f"{farthest[0]}-{farthest[1]}", f"{farthest[2]:g} {WEIGHT_LABEL[criterion]}")
+        averages = []
+        for i, n in enumerate(nodes):
+            vals = [final[i][j] for j in range(len(nodes)) if i != j and not isinf(final[i][j])]
+            if vals:
+                averages.append((n, sum(vals) / len(vals)))
+        if averages:
+            best = min(averages, key=lambda x: x[1])
+            st.metric("Best average connectivity", best[0], f"{best[1]:.1f} {WEIGHT_LABEL[criterion]}")
+    with tab3:
+        st.markdown("Default scenario: add a direct H3-H5 express corridor to bridge the disconnected Dubai/Sharjah/Ajman and Abu Dhabi components.")
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            u = st.selectbox("New edge from", [n for n in graph.nodes if n.startswith("H")], index=2)
+        with c2:
+            v = st.selectbox("New edge to", [n for n in graph.nodes if n.startswith("H")], index=4)
+        with c3:
+            new_weight = st.number_input(f"Assumed {criterion}", min_value=1.0, value=65.0 if criterion == "time" else 60.0, step=1.0)
+        if u != v:
+            if criterion == "time":
+                extra = Edge(u, v, "Proposed express corridor", 60, new_weight, 18)
+            elif criterion == "distance":
+                extra = Edge(u, v, "Proposed express corridor", new_weight, 65, 18)
+            else:
+                extra = Edge(u, v, "Proposed express corridor", 60, 65, new_weight)
+            g2 = WaselGraph(extra_edges=[extra])
+            updated = g2.floyd_warshall(nodes, criterion)
+            st.dataframe(matrix_to_dataframe(pd, nodes, updated["final"]), use_container_width=True)
 
-    with col2:
-        st.subheader("Order Distribution (6,000 orders)")
-        fig = go.Figure()
-        colors = ['#2E75B6' if c < 400 else '#ff6b00' for c in hourly_counts]
-        fig.add_trace(go.Bar(
-            x=[f"{h:02d}:00" for h in range(24)],
-            y=hourly_counts,
-            marker_color=colors,
-            text=hourly_counts,
-            textposition='auto'
-        ))
-        fig.update_layout(
-            title="Ramadan Order Volume by Hour",
-            xaxis_title="Time of Day",
-            yaxis_title="Orders",
-            height=300,
-            margin=dict(l=10, r=10, t=30, b=10)
-        )
-        st.plotly_chart(fig, use_container_width=True)
 
-    with st.expander("📚 D&C vs Linear Search for Peak Finding"):
-        st.markdown("""
-        | Metric | Divide & Conquer | Linear Scan |
-        |--------|-----------------|-------------|
-        | Time Complexity | **O(log n)** | O(n) |
-        | Space Complexity | O(log n) (call stack) | **O(1)** |
-        | Guaranteed Global Max? | ❌ No, finds local peak | ✅ Yes |
-        
-        **Conclusion for WaselX:** Since there are only 24 hours in a day, `n=24` is extremely small. The overhead of recursion makes D&C effectively slower or equal to a simple O(n) linear scan, and D&C might return the local Suhoor peak instead of the true Iftar peak. **Linear scan is recommended here.**
-        """)
+def page_traversal(st: Any, go: Any, pd: Any, graph: WaselGraph, blocked: List[Tuple[str, str]]) -> None:
+    st.title("BFS and DFS Traversal")
+    start = st.selectbox("Start node", graph.nodes, index=graph.nodes.index("H3"))
+    bfs_result = graph.bfs(start)
+    dfs_result = graph.dfs(start)
+    c1, c2 = st.columns(2)
+    with c1:
+        st.subheader("BFS")
+        st.plotly_chart(network_figure(go, graph, "BFS Reachability", visited=bfs_result["order"], current=start, blocked_edges=blocked), use_container_width=True)
+        st.write(" -> ".join(bfs_result["order"]))
+        st.dataframe(pd.DataFrame([{"Node": k, "Parent": v or "-"} for k, v in bfs_result["parent"].items()]), hide_index=True)
+    with c2:
+        st.subheader("DFS")
+        st.write(" -> ".join(dfs_result["order"]))
+        st.dataframe(pd.DataFrame([{"Node": k, "Parent": v or "-"} for k, v in dfs_result["parent"].items()]), hide_index=True)
+    if not bfs_result["reachable_all"]:
+        st.warning(f"Starting from {start}, only {len(bfs_result['order'])} of {len(graph.nodes)} nodes are reachable. This is a key finding for Q7.")
+
+
+def page_mst(st: Any, go: Any, pd: Any, graph: WaselGraph, blocked: List[Tuple[str, str]]) -> None:
+    st.title("Minimum Spanning Tree / Forest")
+    result = graph.kruskal_mst()
+    st.plotly_chart(network_figure(go, graph, "Kruskal Minimum Spanning Forest", mst_edges=result["edges"], blocked_edges=blocked), use_container_width=True)
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Selected edges", len(result["edges"]))
+    c2.metric("Total cost", f"AED {result['total']:.1f}K")
+    c3.metric("Components", len(result["components"]))
+    if not result["is_spanning_tree"]:
+        st.warning("Because the provided graph is disconnected, the mathematically correct output is a Minimum Spanning Forest. A true MST over all 15 nodes would require at least one new bridge edge between components.")
+    tab1, tab2 = st.tabs(["Kruskal Trace", "Prim from H2"])
+    with tab1:
+        st.dataframe(pd.DataFrame(result["trace"]), use_container_width=True, hide_index=True)
+    with tab2:
+        start = st.selectbox("Start", graph.nodes, index=graph.nodes.index("H2"), key="prim_start")
+        prim = graph.prim_mst(start)
+        st.dataframe(pd.DataFrame(prim["trace"]), use_container_width=True, hide_index=True)
+        if not prim["is_complete"]:
+            st.info(f"Prim starting at {start} covers {len(prim['visited'])} nodes in its connected component. Run Kruskal for the full spanning forest across disconnected components.")
+
+
+def page_trees(st: Any, go: Any, pd: Any) -> None:
+    st.title("BST and AVL Tree Indexing")
+    order_ids = [1045, 1023, 1078, 1012, 1034, 1056, 1089, 1005, 1020, 1067, 1050, 1098]
+    root = build_bst(order_ids)
+    avl_root, rotations = build_avl(order_ids)
+    tab1, tab2, tab3 = st.tabs(["BST", "AVL", "Search / Delete"])
+    with tab1:
+        st.plotly_chart(tree_figure(go, tree_positions(root), "BST from Morning Shift Orders"), use_container_width=True)
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Height", tree_height(root))
+        c2.metric("In-order", str(inorder(root)))
+        c3.metric("Worst-case", "O(h)")
+        st.write("Pre-order:", preorder(root))
+        st.write("Post-order:", postorder(root))
+    with tab2:
+        st.plotly_chart(tree_figure(go, tree_positions(avl_root), "AVL Tree from Same Orders"), use_container_width=True)
+        st.metric("AVL height", tree_height(avl_root))
+        if rotations:
+            st.write("Rotations triggered:")
+            for r in rotations:
+                st.write("-", r)
+        else:
+            st.info("This exact sequence remains balanced enough that no AVL rotations are triggered. The assignment still asks for rotation diagrams, so use the examples below in the report.")
+        st.table(pd.DataFrame([
+            ["LL", "Insert 1003 after 1005", "Right rotation"],
+            ["RL", "Insert 1070 under 1067/1078", "Right rotation then left rotation"],
+        ], columns=["Case", "Example", "Fix"]))
+    with tab3:
+        target = st.number_input("Search Order ID", min_value=1000, max_value=9999, value=1067)
+        found, path = search_bst(root, int(target))
+        st.plotly_chart(tree_figure(go, tree_positions(root), f"Search path for {target}", highlight=path[-1] if path else None), use_container_width=True)
+        st.write(f"Found: {found}; Path: {' -> '.join(map(str, path))}; Comparisons: {len(path)}")
+        delete_id = st.selectbox("Delete example", order_ids, index=order_ids.index(1078))
+        if st.button("Show deletion"):
+            new_root = delete_bst(build_bst(order_ids), delete_id)
+            st.plotly_chart(tree_figure(go, tree_positions(new_root), f"BST after deleting {delete_id}"), use_container_width=True)
+            st.write("After deletion in-order:", inorder(new_root))
+
+
+def page_pipeline(st: Any, pd: Any) -> None:
+    st.title("Linked Lists, Priority Queue, and Stack")
+    tab1, tab2, tab3, tab4 = st.tabs(["Doubly Linked List", "Circular Linked List", "Priority Queue", "Stack"])
+    with tab1:
+        route = DoublyLinkedList()
+        for stop in [("Dubai Marina Hub", "ORD001", "10:15"), ("JLT", "ORD002", "10:30"), ("Downtown Dubai", "ORD003", "10:50"), ("Business Bay", "ORD004", "11:05"), ("Deira", "ORD005", "11:25"), ("Silicon Oasis", "ORD006", "11:50")]:
+            route.append(*stop)
+        before = route.display_forward()
+        route.insert_after("ORD003", "Al Quoz (Urgent)", "ORD_URGENT", "10:55")
+        after_insert = route.display_forward()
+        route.delete_by_order_id("ORD005")
+        after_delete = route.display_forward()
+        st.write("Before:", before)
+        st.write("After urgent insertion:", after_insert)
+        st.write("After cancellation:", after_delete)
+    with tab2:
+        riders = CircularLinkedList()
+        for i in range(1, 9):
+            riders.add_rider(f"Rider {i}")
+        assignments = []
+        for order in range(1, 12):
+            assignments.append((order, riders.assign_next_order()))
+        riders.remove_rider("Rider 4")
+        for order in range(12, 21):
+            assignments.append((order, riders.assign_next_order()))
+        st.dataframe(pd.DataFrame(assignments, columns=["Order", "Assigned Rider"]), hide_index=True)
+        st.write("Current roster:", riders.display_roster())
+    with tab3:
+        orders = [("Order A", 3), ("Order B", 1), ("Order C", 4), ("Order D", 2), ("Order E", 1), ("Order F", 5), ("Order G", 2), ("Order H", 3), ("Order I", 1), ("Order J", 4)]
+        pq = MinHeap()
+        for name, priority in orders:
+            pq.push(priority, name)
+        dequeued = []
+        while pq:
+            priority, _, name = pq.pop()[:3]
+            dequeued.append((name, priority))
+        st.dataframe(pd.DataFrame(dequeued, columns=["Order", "Priority"]), hide_index=True)
+        st.caption("FIFO tie-breaking is preserved by an internal arrival counter.")
+    with tab4:
+        lifecycle = Stack()
+        for status in ["Received", "Confirmed", "Preparing", "Dispatched", "In Transit", "Delivered"]:
+            lifecycle.push(status)
+        st.write("Delivered order stack (top first):", lifecycle.display_top_first())
+        error_demo = Stack()
+        for status in ["Received", "Confirmed", "Preparing", "Dispatched"]:
+            error_demo.push(status)
+        before = error_demo.display_top_first()
+        error_demo.pop()
+        after = error_demo.display_top_first()
+        st.write("Undo demo before:", before)
+        st.write("Undo demo after:", after)
+
+
+def page_sorting(st: Any, go: Any, px: Any, pd: Any) -> None:
+    st.title("Sorting, Searching, and Divide-and-Conquer")
+    tab1, tab2, tab3 = st.tabs(["Sort manifest", "Search order ID", "Peak hour"])
+    sample = [("JLT",3), ("Deira",1), ("Marina",4), ("JLT",1), ("Deira",2), ("Marina",2), ("Silicon",5), ("Deira",3), ("JLT",2), ("Marina",1), ("Silicon",1), ("Deira",4), ("Silicon",3), ("JLT",5), ("Marina",3)]
+    with tab1:
+        ms_sorted, ms_count, ms_steps = merge_sort(sample)
+        qs_sorted, qs_count, qs_steps = quick_sort(sample)
+        st.dataframe(pd.DataFrame(ms_sorted, columns=["Zone", "Priority"]), hide_index=True)
+        st.metric("Merge comparisons", ms_count)
+        st.metric("Quick comparisons", qs_count)
+        with st.expander("Merge first 3 recursion levels"):
+            st.write("\n".join(ms_steps))
+        with st.expander("Quick first 2 partition levels"):
+            st.write("\n".join(qs_steps))
+    with tab2:
+        ids = list(range(10001, 11001))
+        target = st.number_input("Order ID", min_value=10001, max_value=11000, value=10667)
+        b_idx, b_comp, b_trace = binary_search(ids, int(target))
+        l_idx, l_comp = linear_search(ids, int(target))
+        st.table(pd.DataFrame([["Binary", b_idx, b_comp], ["Linear", l_idx, l_comp]], columns=["Method", "Index", "Comparisons"]))
+        st.dataframe(pd.DataFrame(b_trace, columns=["Low", "Mid", "High", "Mid Value"]), hide_index=True)
+    with tab3:
+        default_orders = [80, 55, 40, 30, 25, 20, 35, 60, 120, 210, 280, 330, 300, 260, 240, 290, 410, 520, 610, 480, 360, 250, 180, 120]
+        top = peak_hour_divide_conquer(default_orders, 3)
+        st.line_chart(pd.DataFrame({"Hour": list(range(24)), "Orders": default_orders}).set_index("Hour"))
+        st.write("Top peak hours:", top)
+
+
+def main() -> None:
+    st, go, px, pd = require_ui_libraries()
+    style_app(st)
+    with st.sidebar:
+        st.markdown("## 🚚 WaselX DSA")
+        st.caption("Professional cleaned prototype")
+        section = st.radio("Navigate", [
+            "Overview", "Network", "Pathfinder", "Floyd-Warshall", "BFS/DFS", "MST", "BST/AVL", "Pipeline DS", "Sorting/Search/Peak"
+        ])
+        edge_labels = {f"{u}-{v} ({road})": (u, v) for u, v, road, *_ in EDGES}
+        selected = st.multiselect("Global road closures", list(edge_labels.keys()))
+        blocked = [edge_labels[label] for label in selected]
+        st.markdown("---")
+        st.caption("Team: " + " · ".join(TEAM_MEMBERS))
+    graph = WaselGraph(blocked_edges=blocked)
+    if section == "Overview":
+        page_overview(st, go, pd, graph, blocked)
+    elif section == "Network":
+        page_network(st, go, pd, graph, blocked)
+    elif section == "Pathfinder":
+        page_pathfinder(st, go, pd, graph, blocked)
+    elif section == "Floyd-Warshall":
+        page_floyd(st, go, pd, graph)
+    elif section == "BFS/DFS":
+        page_traversal(st, go, pd, graph, blocked)
+    elif section == "MST":
+        page_mst(st, go, pd, graph, blocked)
+    elif section == "BST/AVL":
+        page_trees(st, go, pd)
+    elif section == "Pipeline DS":
+        page_pipeline(st, pd)
+    else:
+        page_sorting(st, go, px, pd)
+
+
+# =============================================================================
+# TESTS / VALIDATION
+# =============================================================================
+
+def run_self_test() -> None:
+    graph = WaselGraph()
+    h1_d1 = graph.dijkstra("H1", "D1", "distance")
+    assert h1_d1["path"] == ["H1", "D1"], h1_d1
+    assert h1_d1["best"] == 8, h1_d1
+    h1_d4 = graph.dijkstra("H1", "D4", "distance")
+    assert h1_d4["metrics"]["distance"] == 21, h1_d4
+    h5_d5 = graph.dijkstra("H5", "D5", "distance")
+    assert h5_d5["path"] == [], h5_d5
+    bfs_h3 = graph.bfs("H3")
+    assert len(bfs_h3["order"]) == 11, bfs_h3
+    mst = graph.kruskal_mst()
+    assert round(mst["total"], 1) == 62.0, mst
+    assert len(mst["edges"]) == 13, mst
+    pq = MinHeap()
+    for name, priority in [("A", 3), ("B", 1), ("C", 1)]:
+        pq.push(priority, name)
+    assert [pq.pop()[2], pq.pop()[2], pq.pop()[2]] == ["B", "C", "A"]
+    print("Self-test passed: core graph, heap, BFS, MST, and disconnection checks are valid.")
+
+
+if __name__ == "__main__":
+    if "--self-test" in sys.argv:
+        run_self_test()
+    else:
+        main()
