@@ -79,57 +79,65 @@ EDGES: List[Tuple[str, str, str, float, float, float]] = [
     ("H6", "D7", "Reem Bridge", 10, 18, 7.0),
 ]
 
-POS: Dict[str, Tuple[float, float]] = {node: (NODE_INFO[node][5], NODE_INFO[node][4]) for node in NODES}
-
-# Manual presentation layout used by Plotly to produce clearer, presenter-grade
-# network visuals than raw latitude/longitude coordinates.
-DISPLAY_POS: Dict[str, Tuple[float, float]] = {
+POS: Dict[str, Tuple[float, float]] = {
     # Abu Dhabi component
-    "H5": (-6.2, -2.8), "D7": (-5.35, -2.15), "H6": (-4.35, -3.25), "D6": (-3.2, -2.55),
+    "H5": (-6.2, -2.4),
+    "D7": (-5.1, -1.8),
+    "H6": (-4.1, -3.0),
+    "D6": (-2.8, -2.2),
     # Dubai / Sharjah / Ajman component
-    "H4": (-0.55, 0.20), "H1": (0.55, -0.62), "D3": (1.55, 0.24), "D2": (2.45, 0.58),
-    "D1": (3.45, 1.12), "H2": (4.35, 0.88), "H3": (6.10, 2.15), "D4": (7.65, 1.02),
-    "H7": (9.20, 2.98), "D5": (10.55, 3.92), "D8": (11.95, 2.88),
+    "H4": (-0.7, 0.1),
+    "H1": (0.8, -0.8),
+    "D3": (1.9, 0.15),
+    "D2": (3.1, 0.65),
+    "D1": (4.1, 1.08),
+    "H2": (5.2, 0.82),
+    "H3": (7.2, 2.05),
+    "D4": (8.9, 0.98),
+    "H7": (11.0, 2.92),
+    "D5": (12.3, 3.88),
+    "D8": (13.6, 2.82),
 }
 
-TEXT_POSITIONS: Dict[str, str] = {
-    "H5": "top center", "D7": "top center", "H6": "bottom center", "D6": "top center",
-    "H4": "top left", "H1": "bottom center", "D3": "top center", "D2": "top center",
-    "D1": "top center", "H2": "bottom center", "H3": "top center", "D4": "bottom center",
-    "H7": "top center", "D5": "top center", "D8": "middle right",
+NODE_LABEL_OFFSETS: Dict[str, Tuple[float, float]] = {
+    "H5": (0.0, 0.55), "D7": (0.0, 0.55), "H6": (0.0, -0.58), "D6": (0.0, 0.55),
+    "H4": (-0.45, 0.52), "H1": (0.0, -0.58), "D3": (-0.10, 0.48), "D2": (0.15, 0.48),
+    "D1": (0.0, 0.5), "H2": (0.10, -0.55), "H3": (0.0, 0.5), "D4": (0.0, -0.52),
+    "H7": (0.0, 0.52), "D5": (0.0, 0.5), "D8": (0.42, 0.0),
 }
 
-EDGE_LABEL_OFFSETS: Dict[Tuple[str, str], Tuple[float, float]] = {
-    ("H1", "H4"): (-0.10, -0.24), ("H1", "D3"): (0.05, -0.24), ("H1", "D1"): (0.28, 0.18),
-    ("H4", "D2"): (0.05, 0.22), ("H4", "H2"): (0.18, -0.18), ("H2", "D1"): (0.00, 0.30),
-    ("H2", "H3"): (0.08, 0.30), ("H3", "D4"): (0.14, -0.24), ("H3", "H7"): (0.10, 0.28),
-    ("H7", "D8"): (0.05, -0.24), ("H7", "D5"): (0.10, 0.26), ("D1", "D3"): (-0.02, 0.26),
-    ("D1", "D2"): (-0.12, -0.20), ("D2", "D4"): (0.16, -0.28), ("H5", "D7"): (-0.05, 0.24),
-    ("H5", "H6"): (-0.06, -0.30), ("H6", "D6"): (0.12, 0.24), ("D6", "D7"): (-0.02, -0.26),
-    ("H5", "D6"): (0.05, 0.34), ("D4", "D8"): (0.18, 0.24), ("H3", "D2"): (-0.30, -0.05),
-    ("H1", "H2"): (0.00, 0.36), ("D5", "D8"): (0.10, 0.22), ("H6", "D7"): (-0.12, 0.26),
+EDGE_LABEL_POS: Dict[Tuple[str, str], Tuple[float, float]] = {
+    ("H1", "H4"): (0.05, -0.10),
+    ("H1", "D3"): (1.35, -0.34),
+    ("H1", "D1"): (2.45, 0.45),
+    ("H4", "D2"): (1.10, 0.58),
+    ("H4", "H2"): (2.35, 0.05),
+    ("H2", "D1"): (4.65, 1.42),
+    ("H2", "H3"): (6.10, 1.55),
+    ("H3", "D4"): (8.00, 1.55),
+    ("H3", "H7"): (9.15, 2.82),
+    ("H7", "D8"): (12.15, 2.40),
+    ("H7", "D5"): (11.65, 3.62),
+    ("D1", "D3"): (2.95, 0.90),
+    ("D1", "D2"): (3.55, 1.63),
+    ("D2", "D4"): (6.00, 0.22),
+    ("H5", "D7"): (-5.72, -1.95),
+    ("H5", "H6"): (-5.25, -3.05),
+    ("H6", "D6"): (-3.40, -2.88),
+    ("D6", "D7"): (-3.95, -1.88),
+    ("H5", "D6"): (-4.55, -1.48),
+    ("D4", "D8"): (11.15, 1.80),
+    ("H3", "D2"): (5.20, 1.92),
+    ("H1", "H2"): (3.05, -0.40),
+    ("D5", "D8"): (13.05, 3.55),
+    ("H6", "D7"): (-4.55, -2.30),
 }
 
 EMIRATE_COLORS = {
-    "Dubai": "#2563EB",
-    "Abu Dhabi": "#C2410C",
-    "Sharjah": "#15803D",
-    "Ajman": "#7C3AED",
-}
-
-THEME = {
-    "ink": "#0F172A",
-    "muted": "#64748B",
-    "panel": "#FFFFFF",
-    "line": "#D9E2EC",
-    "surface": "#F8FAFC",
-    "primary": "#0F766E",
-    "primary_dark": "#134E4A",
-    "accent": "#F97316",
-    "accent_alt": "#7C3AED",
-    "success": "#16A34A",
-    "warning": "#D97706",
-    "danger": "#DC2626",
+    "Dubai": "#2E75B6",
+    "Abu Dhabi": "#C55A11",
+    "Sharjah": "#375623",
+    "Ajman": "#7030A0",
 }
 
 TEAM_MEMBERS = [
@@ -1046,227 +1054,112 @@ def matrix_to_dataframe(pd: Any, labels: List[str], matrix: List[List[float]]) -
     return pd.DataFrame(data, columns=["Node"] + labels).set_index("Node")
 
 
-
-def metric_card_html(value: str, label: str, detail: str = "", icon: str = "", tone: str = "primary") -> str:
-    """Small reusable HTML card used to keep Streamlit pages visually consistent."""
-    return f"""
-    <div class="metric-card metric-{tone}">
-      <div class="metric-icon">{icon}</div>
-      <div>
-        <div class="metric-value">{value}</div>
-        <div class="metric-label">{label}</div>
-        {f'<div class="metric-detail">{detail}</div>' if detail else ''}
-      </div>
-    </div>
-    """
-
-
-def section_header_html(title: str, subtitle: str = "", kicker: str = "") -> str:
-    return f"""
-    <div class="section-header">
-      {f'<div class="section-kicker">{kicker}</div>' if kicker else ''}
-      <h2>{title}</h2>
-      {f'<p>{subtitle}</p>' if subtitle else ''}
-    </div>
-    """
-
-
-def route_card_html(title: str, path: List[str], metrics: Dict[str, float], tone: str = "primary") -> str:
-    path_text = path_to_string(path)
-    distance = format_number(metrics.get("distance", INF))
-    minutes = format_number(metrics.get("time", INF))
-    cost = format_number(metrics.get("cost", INF))
-    return f"""
-    <div class="route-card route-{tone}">
-      <div class="route-card-title">{title}</div>
-      <div class="route-path">{path_text}</div>
-      <div class="route-metrics">
-        <span>{distance} km</span><span>{minutes} min</span><span>AED {cost}</span>
-      </div>
-    </div>
-    """
-
-
-def format_delta(after: float, before: float, suffix: str = "") -> str:
-    if isinf(after) or isinf(before):
-        return "No feasible route"
-    delta = after - before
-    sign = "+" if delta > 0 else ""
-    return f"{sign}{format_number(delta)}{suffix}"
-
-
-def route_to_dataframe(pd: Any, route_rows: List[Tuple[str, str, str]]) -> Any:
-    return pd.DataFrame(route_rows, columns=["Stop", "Order ID", "ETA"])
-
-def network_figure(go: Any, graph: WaselGraph, title: str,
+def network_figure(go: Any, graph: WaselGraph, title: str = "WaselX Delivery Network",
                    highlight_path: Optional[List[str]] = None,
-                   blocked_edges: Optional[List[Tuple[str, str]]] = None,
-                   secondary_path: Optional[List[str]] = None,
                    mst_edges: Optional[List[Edge]] = None,
-                   visited: Optional[List[str]] = None,
-                   current: Optional[str] = None,
-                   primary_label: str = "Primary route",
-                   secondary_label: str = "Secondary route",
-                   show_edge_labels: bool = False,
-                   temporary_edge: Optional[Tuple[str, str]] = None,
-                   cluster_labels: bool = True) -> Any:
-    """Presenter-grade Plotly network visualization for the WaselX graph.
-
-    Static visuals use clean labels and spacing. Animation views should pass
-    show_edge_labels=False so highlighted paths remain visually prominent.
-    """
+                   blocked_edges: Optional[Iterable[Tuple[str, str]]] = None,
+                   visited: Optional[Iterable[str]] = None,
+                   current: Optional[str] = None) -> Any:
     highlight_path = highlight_path or []
-    secondary_path = secondary_path or []
     mst_edges = mst_edges or []
     blocked = {normalized_edge(u, v) for u, v in (blocked_edges or [])}
     visited_set = set(visited or [])
+    path_edges = {normalized_edge(a, b) for a, b in zip(highlight_path, highlight_path[1:])}
     mst_set = {edge.key() for edge in mst_edges}
-    highlight_edges = {normalized_edge(u, v) for u, v in zip(highlight_path, highlight_path[1:])}
-    secondary_edges = {normalized_edge(u, v) for u, v in zip(secondary_path, secondary_path[1:])}
-    temp_edge = normalized_edge(*temporary_edge) if temporary_edge else None
-
     fig = go.Figure()
 
-    # Legend anchors.
-    fig.add_trace(go.Scatter(x=[None], y=[None], mode="markers", name="Hubs",
-                             marker={"symbol": "diamond", "size": 15, "color": "#94A3B8",
-                                     "line": {"width": 1.5, "color": "white"}}))
-    fig.add_trace(go.Scatter(x=[None], y=[None], mode="markers", name="Delivery zones",
-                             marker={"symbol": "circle", "size": 13, "color": "#94A3B8",
-                                     "line": {"width": 1.5, "color": "white"}}))
-
-    # Draw base road network.
+    # Road edges first
     for edge in graph.edges:
-        x0, y0 = DISPLAY_POS[edge.source]
-        x1, y1 = DISPLAY_POS[edge.target]
+        x0, y0 = POS[edge.source]
+        x1, y1 = POS[edge.target]
         key = edge.key()
-        if key == temp_edge:
-            color, width, dash, opacity = THEME["warning"], 5.0, "dash", 1.0
-        elif key in blocked:
-            color, width, dash, opacity = THEME["danger"], 4.2, "dot", 0.98
+        if key in blocked:
+            color, width, dash = "#CC0000", 3.2, "dot"
+        elif key in path_edges:
+            color, width, dash = "#FF6B00", 6.0, "solid"
         elif key in mst_set:
-            color, width, dash, opacity = THEME["success"], 4.4, "solid", 0.98
-        elif key in highlight_edges:
-            color, width, dash, opacity = THEME["accent"], 6.2, "solid", 1.0
-        elif key in secondary_edges:
-            color, width, dash, opacity = THEME["accent_alt"], 5.4, "dash", 0.98
+            color, width, dash = "#00A651", 4.4, "solid"
         else:
-            color, width, dash, opacity = "#B7C4D6", 2.4, "solid", 0.82
-
+            color, width, dash = "#C8CDD2", 1.8, "solid"
         fig.add_trace(go.Scatter(
             x=[x0, x1], y=[y0, y1], mode="lines",
-            line={"color": "rgba(255,255,255,0.98)", "width": width + 4.0},
+            line={"color": "rgba(255,255,255,0.95)", "width": width + 2.4, "dash": dash},
             hoverinfo="skip", showlegend=False,
         ))
         fig.add_trace(go.Scatter(
             x=[x0, x1], y=[y0, y1], mode="lines",
-            line={"color": color, "width": width, "dash": dash}, opacity=opacity,
-            text=f"<b>{edge.source} ↔ {edge.target}</b><br>{edge.road}<br>{edge.distance:g} km · {edge.time:g} min · AED {edge.cost:g}",
+            line={"color": color, "width": width, "dash": dash},
+            text=f"{edge.source}-{edge.target} | {edge.road}<br>{edge.distance:g} km | {edge.time:g} min | AED {edge.cost:g}",
             hoverinfo="text", showlegend=False,
         ))
 
-        if show_edge_labels:
-            mx, my = (x0 + x1) / 2, (y0 + y1) / 2
-            dx, dy = EDGE_LABEL_OFFSETS.get(key, (0.0, 0.0))
-            fig.add_annotation(
-                x=mx + dx, y=my + dy, text=f"{edge.distance:g} km", showarrow=False,
-                font={"size": 10, "color": "#334155", "family": "Inter, Arial"},
-                bgcolor="rgba(255,255,255,0.94)", bordercolor="#CBD5E1", borderwidth=1,
-                borderpad=2,
-            )
+    # Separate edge labels with manual positions to avoid overlap.
+    for edge in graph.edges:
+        key = edge.key()
+        lx, ly = EDGE_LABEL_POS.get(key, ((POS[edge.source][0] + POS[edge.target][0]) / 2, (POS[edge.source][1] + POS[edge.target][1]) / 2))
+        fig.add_annotation(
+            x=lx, y=ly, text=f"{edge.distance:g} km", showarrow=False,
+            font={"size": 9, "color": "#475569"},
+            bgcolor="rgba(255,255,255,0.92)", bordercolor="#CBD5E1", borderwidth=1, borderpad=2,
+        )
 
-    def add_route(path: List[str], color: str, label: str, dash: str = "solid", width: float = 6.0) -> None:
-        if len(path) < 2:
-            return
-        x, y = [], []
-        for u, v in zip(path, path[1:]):
-            if graph.edge_between(u, v) is None:
-                continue
-            x.extend([DISPLAY_POS[u][0], DISPLAY_POS[v][0], None])
-            y.extend([DISPLAY_POS[u][1], DISPLAY_POS[v][1], None])
-        fig.add_trace(go.Scatter(
-            x=x, y=y, mode="lines", name=label,
-            line={"color": "rgba(255,255,255,0.98)", "width": width + 3.5},
-            hoverinfo="skip", showlegend=False,
-        ))
-        fig.add_trace(go.Scatter(
-            x=x, y=y, mode="lines", name=label,
-            line={"color": color, "width": width, "dash": dash},
-            opacity=1.0, hoverinfo="skip", showlegend=True,
-        ))
-
-    add_route(secondary_path, THEME["accent_alt"], secondary_label, "dash", 5.2)
-    add_route(highlight_path, THEME["accent"], primary_label, "solid", 6.6)
-
-    # Node traces.
+    # Node markers by type so hubs and zones remain distinct.
+    hub_x, hub_y, hub_color, hub_size, hub_hover = [], [], [], [], []
+    zone_x, zone_y, zone_color, zone_size, zone_hover = [], [], [], [], []
     for node in graph.nodes:
-        x, y = DISPLAY_POS[node]
+        x, y = POS[node]
         name, kind, emirate, orders, *_ = NODE_INFO[node]
-        is_hub = kind == "Hub"
-        base_color = EMIRATE_COLORS.get(emirate, "#64748B")
+        base_color = EMIRATE_COLORS.get(emirate, "#777")
         node_color = base_color
-        if node in secondary_path:
-            node_color = THEME["accent_alt"]
+        if node in visited_set:
+            node_color = "#00A651"
         if node in highlight_path:
-            node_color = THEME["accent"]
-        if node in visited_set and node not in highlight_path and node not in secondary_path:
-            node_color = THEME["success"]
+            node_color = "#FF6B00"
         if node == current:
-            node_color = THEME["warning"]
-        size = 26 if is_hub else 20
-        if node in highlight_path or node in secondary_path:
-            size += 7
-        if node == current:
-            size += 7
-        hover = f"<b>{node}: {name}</b><br>{kind} · {emirate}<br>Daily orders: {orders}"
+            node_color = "#FF6B00"
+        size = 25 if kind == "Hub" else 19
+        if node in highlight_path or node == current:
+            size += 5
+        hover = f"<b>{node}: {name}</b><br>{kind} | {emirate}<br>Daily orders: {orders}"
+        if kind == "Hub":
+            hub_x.append(x); hub_y.append(y); hub_color.append(node_color); hub_size.append(size); hub_hover.append(hover)
+        else:
+            zone_x.append(x); zone_y.append(y); zone_color.append(node_color); zone_size.append(size); zone_hover.append(hover)
 
-        fig.add_trace(go.Scatter(
-            x=[x], y=[y], mode="markers", showlegend=False, hoverinfo="skip",
-            marker={"symbol": "diamond" if is_hub else "circle", "size": size + 8, "color": "rgba(255,255,255,0.96)"},
-        ))
-        fig.add_trace(go.Scatter(
-            x=[x], y=[y], mode="markers+text", showlegend=False,
-            text=[node], textposition=TEXT_POSITIONS.get(node, "top center"),
-            hovertext=hover, hoverinfo="text",
-            marker={"symbol": "diamond" if is_hub else "circle", "size": size, "color": node_color,
-                    "line": {"width": 2.2, "color": "white"}},
-            textfont={"size": 12, "color": THEME["ink"], "family": "Inter, Arial"},
-        ))
+    fig.add_trace(go.Scatter(
+        x=hub_x, y=hub_y, mode="markers", name="Hubs",
+        hovertext=hub_hover, hoverinfo="text",
+        marker={"symbol": "diamond", "size": hub_size, "color": hub_color, "line": {"width": 2.2, "color": "white"}},
+    ))
+    fig.add_trace(go.Scatter(
+        x=zone_x, y=zone_y, mode="markers", name="Delivery zones",
+        hovertext=zone_hover, hoverinfo="text",
+        marker={"symbol": "circle", "size": zone_size, "color": zone_color, "line": {"width": 2.0, "color": "white"}},
+    ))
 
-    if blocked:
-        fig.add_trace(go.Scatter(x=[None], y=[None], mode="lines", name="Blocked road",
-                                 line={"color": THEME["danger"], "width": 4, "dash": "dot"}))
-    if mst_edges:
-        fig.add_trace(go.Scatter(x=[None], y=[None], mode="lines", name="Forest edge",
-                                 line={"color": THEME["success"], "width": 4}))
-    if temp_edge:
-        fig.add_trace(go.Scatter(x=[None], y=[None], mode="lines", name="Animation step",
-                                 line={"color": THEME["warning"], "width": 4, "dash": "dash"}))
+    # Non-overlapping node labels as annotations.
+    for node in graph.nodes:
+        x, y = POS[node]
+        dx, dy = NODE_LABEL_OFFSETS.get(node, (0.0, 0.45))
+        fig.add_annotation(
+            x=x + dx, y=y + dy, text=f"<b>{node}</b>", showarrow=False,
+            font={"size": 11, "color": "#0F172A"}, bgcolor="rgba(255,255,255,0.0)",
+        )
 
-    xs = [x for x, _ in DISPLAY_POS.values()]
-    ys = [y for _, y in DISPLAY_POS.values()]
-    x_pad, y_pad = 0.95, 0.85
+    x_values = [coord[0] for coord in POS.values()]
+    y_values = [coord[1] for coord in POS.values()]
     fig.update_layout(
-        title={"text": title, "x": 0.015, "xanchor": "left", "font": {"size": 18, "color": THEME["ink"], "family": "Inter, Arial"}},
-        xaxis={"showgrid": False, "zeroline": False, "showticklabels": False, "fixedrange": True, "range": [min(xs)-x_pad, max(xs)+x_pad]},
-        yaxis={"showgrid": False, "zeroline": False, "showticklabels": False, "fixedrange": True, "range": [min(ys)-y_pad, max(ys)+y_pad], "scaleanchor": "x", "scaleratio": 1},
-        height=640,
-        plot_bgcolor="#F8FAFC",
-        paper_bgcolor="rgba(0,0,0,0)",
-        margin={"l": 12, "r": 12, "t": 78, "b": 54},
-        hovermode="closest",
-        font={"family": "Inter, Arial", "color": THEME["ink"]},
-        legend={"orientation": "h", "yanchor": "top", "y": -0.08, "xanchor": "left", "x": 0,
-                "bgcolor": "rgba(255,255,255,0.90)", "bordercolor": "#E2E8F0", "borderwidth": 1},
+        title={"text": title, "x": 0.02, "xanchor": "left", "font": {"size": 18, "color": "#12395B"}},
+        xaxis={"showgrid": False, "zeroline": False, "showticklabels": False, "range": [min(x_values) - 0.9, max(x_values) + 0.9], "fixedrange": True},
+        yaxis={"showgrid": False, "zeroline": False, "showticklabels": False, "range": [min(y_values) - 1.0, max(y_values) + 0.9], "fixedrange": True, "scaleanchor": "x", "scaleratio": 1},
+        height=600,
+        plot_bgcolor="#F8FAFD",
+        paper_bgcolor="white",
+        margin={"l": 8, "r": 8, "t": 50, "b": 16},
+        legend={"orientation": "h", "x": 0.0, "y": 1.04, "bgcolor": "rgba(255,255,255,0.85)", "bordercolor": "#E2E8F0", "borderwidth": 1},
     )
-    if cluster_labels:
-        fig.add_annotation(x=-4.6, y=-1.65, text="<b>Abu Dhabi cluster</b>", showarrow=False,
-                           font={"size": 12, "color": "#7C2D12"}, bgcolor="rgba(255,255,255,0.86)",
-                           bordercolor="#FED7AA", borderwidth=1)
-        fig.add_annotation(x=7.8, y=4.45, text="<b>Dubai · Sharjah · Ajman cluster</b>", showarrow=False,
-                           font={"size": 12, "color": "#1E3A8A"}, bgcolor="rgba(255,255,255,0.86)",
-                           bordercolor="#BFDBFE", borderwidth=1)
     return fig
+
 
 def tree_figure(go: Any, positions: List[Tuple[int, float, float, Optional[int]]], title: str,
                 highlight: Optional[int] = None) -> Any:
@@ -1275,90 +1168,32 @@ def tree_figure(go: Any, positions: List[Tuple[int, float, float, Optional[int]]
     for key, x, y, parent in positions:
         if parent is not None:
             px, py = pos[parent]
-            edge_color = THEME["accent"] if key == highlight or parent == highlight else "#CBD5E1"
             fig.add_trace(go.Scatter(x=[px, x], y=[py, y], mode="lines",
-                                     line={"color": edge_color, "width": 2.3}, showlegend=False, hoverinfo="skip"))
+                                     line={"color": "#A9B0B8", "width": 2}, showlegend=False))
     for key, x, y, _ in positions:
-        is_highlight = key == highlight
-        color = THEME["accent"] if is_highlight else "#2563EB"
-        size = 44 if is_highlight else 38
+        color = "#FF6B00" if key == highlight else "#2E75B6"
         fig.add_trace(go.Scatter(x=[x], y=[y], mode="markers+text", text=[str(key)],
                                  textposition="middle center",
-                                 marker={"size": size, "color": color, "line": {"width": 2.5, "color": "white"}},
-                                 textfont={"color": "white", "size": 11, "family": "Inter, Arial"},
-                                 hovertext=f"Order ID {key}", hoverinfo="text", showlegend=False))
-    fig.update_layout(title={"text": title, "x": 0.02, "font": {"size": 18, "color": THEME["ink"]}}, height=430,
-                      plot_bgcolor="#F8FAFC", paper_bgcolor="rgba(0,0,0,0)",
-                      xaxis={"showgrid": False, "zeroline": False, "showticklabels": False, "fixedrange": True},
-                      yaxis={"showgrid": False, "zeroline": False, "showticklabels": False, "fixedrange": True},
-                      font={"family": "Inter, Arial", "color": THEME["ink"]},
-                      margin={"l": 8, "r": 8, "t": 52, "b": 8})
+                                 marker={"size": 38, "color": color, "line": {"width": 2, "color": "white"}},
+                                 textfont={"color": "white", "size": 11}, showlegend=False))
+    fig.update_layout(title=title, height=410, plot_bgcolor="#F8FAFD", paper_bgcolor="white",
+                      xaxis={"showgrid": False, "zeroline": False, "showticklabels": False},
+                      yaxis={"showgrid": False, "zeroline": False, "showticklabels": False},
+                      margin={"l": 5, "r": 5, "t": 45, "b": 5})
     return fig
 
 
 def style_app(st: Any) -> None:
-    st.set_page_config(page_title="WaselX Express — Professional DSA Prototype", page_icon="🚚", layout="wide", initial_sidebar_state="expanded")
+    st.set_page_config(page_title="WaselX Express — DSA Prototype", page_icon="🚚", layout="wide")
     st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-    :root {
-      --ink:#0F172A; --muted:#64748B; --line:#D9E2EC; --surface:#F8FAFC; --panel:#FFFFFF;
-      --primary:#0F766E; --primary-dark:#134E4A; --accent:#F97316; --violet:#7C3AED;
-      --success:#16A34A; --warning:#D97706; --danger:#DC2626;
-    }
-    html, body, [class*="css"] { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-    .stApp { background: radial-gradient(circle at top left, rgba(15,118,110,.08), transparent 35%), linear-gradient(180deg,#F8FAFC 0%,#EEF2F7 100%); }
-    [data-testid="stSidebar"] { background: linear-gradient(180deg,#0B1220 0%,#102A43 56%,#134E4A 100%); border-right:1px solid rgba(255,255,255,.08); }
-    [data-testid="stSidebar"] * { color:#E8F1FF !important; }
-    [data-testid="stSidebar"] .stRadio label { padding:.24rem 0; }
-    [data-testid="stSidebar"] .stCaption { color:#B9C6D6 !important; }
-    .block-container { padding-top: 1.2rem; max-width: 1360px; }
-    h1, h2, h3 { letter-spacing: -.02em; color: var(--ink); }
-    div[data-testid="stTabs"] button { font-weight: 700; letter-spacing: -.01em; }
-    div[data-testid="stDataFrame"], div[data-testid="stTable"] { border-radius: 14px; overflow: hidden; box-shadow: 0 10px 28px rgba(15,23,42,.05); }
-    .hero {
-      position: relative; overflow: hidden; color:white; padding: 34px 38px; border-radius: 26px; margin-bottom: 22px;
-      background: radial-gradient(circle at 15% 10%, rgba(255,255,255,.28), transparent 24%), linear-gradient(135deg,#0F766E 0%,#0B2F52 55%,#1E1B4B 100%);
-      box-shadow: 0 22px 55px rgba(15,23,42,.22); border:1px solid rgba(255,255,255,.16);
-    }
-    .hero h1 { color:white; font-size: 2.55rem; margin:0; font-weight:800; }
-    .hero p { margin:.5rem 0 0; color:#D7F7EF; font-size:1.05rem; max-width: 900px; }
-    .section-header { margin: 1.3rem 0 .85rem; padding: 0 0 .25rem; }
-    .section-kicker { color: var(--primary); font-size:.78rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; margin-bottom:.22rem; }
-    .section-header h2 { margin:0; font-size:1.45rem; font-weight:800; }
-    .section-header p { margin:.35rem 0 0; color:var(--muted); }
-    .metric-card {
-      min-height: 112px; display:flex; align-items:center; gap:14px; background: rgba(255,255,255,.9); border:1px solid rgba(217,226,236,.95);
-      border-radius: 20px; padding:18px; box-shadow: 0 14px 35px rgba(15,23,42,.075); backdrop-filter: blur(8px); transition: transform .18s ease, box-shadow .18s ease;
-    }
-    .metric-card:hover { transform: translateY(-2px); box-shadow: 0 18px 42px rgba(15,23,42,.11); }
-    .metric-icon { width:46px; height:46px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:1.35rem; background:linear-gradient(135deg,#CCFBF1,#DBEAFE); }
-    .metric-value { font-size:1.72rem; line-height:1.05; color:var(--ink); font-weight:800; }
-    .metric-label { color:#334155; font-weight:700; font-size:.95rem; }
-    .metric-detail { color:var(--muted); font-size:.78rem; margin-top:.18rem; }
-    .metric-warn .metric-icon { background:linear-gradient(135deg,#FEF3C7,#FED7AA); }
-    .metric-danger .metric-icon { background:linear-gradient(135deg,#FEE2E2,#FFE4E6); }
-    .metric-ok .metric-icon { background:linear-gradient(135deg,#DCFCE7,#CCFBF1); }
-    .panel, .note, .warn, .success {
-      border-radius:18px; padding:16px 18px; margin:.4rem 0; border:1px solid var(--line); box-shadow:0 10px 28px rgba(15,23,42,.05); background:white;
-    }
-    .note { border-left:6px solid #2563EB; background:#EFF6FF; }
-    .warn { border-left:6px solid var(--warning); background:#FFFBEB; }
-    .success { border-left:6px solid var(--success); background:#F0FDF4; }
-    .route-card { background:white; border:1px solid var(--line); border-radius:18px; padding:16px; box-shadow: 0 10px 30px rgba(15,23,42,.06); margin:.35rem 0; }
-    .route-card-title { font-weight:800; color:var(--ink); font-size:1rem; margin-bottom:.45rem; }
-    .route-path { color:#0F766E; font-weight:800; line-height:1.45; word-break:break-word; }
-    .route-metrics { display:flex; gap:10px; flex-wrap:wrap; margin-top:.75rem; }
-    .route-metrics span, .status-chip { display:inline-flex; align-items:center; padding:.35rem .62rem; border-radius:999px; font-weight:700; font-size:.78rem; border:1px solid transparent; }
-    .route-metrics span { background:#F1F5F9; color:#334155; }
-    .route-primary { border-top:4px solid var(--accent); }
-    .route-secondary { border-top:4px solid var(--violet); }
-    .chip-ok { background:#DCFCE7; color:#166534; border-color:#BBF7D0; }
-    .chip-warn { background:#FEF3C7; color:#92400E; border-color:#FDE68A; }
-    .chip-danger { background:#FEE2E2; color:#991B1B; border-color:#FECACA; }
-    .chip-info { background:#DBEAFE; color:#1E40AF; border-color:#BFDBFE; }
-    .footer { color:#64748B; font-size:.82rem; border-top:1px solid #E2E8F0; margin-top:2rem; padding-top:1rem; }
-    .stButton > button { border-radius: 12px; border:1px solid #CBD5E1; font-weight:700; }
+    [data-testid="stSidebar"] {background:#0F1C2E;}
+    [data-testid="stSidebar"] * {color:#E8F1FF !important;}
+    .hero {background:linear-gradient(135deg,#12395B,#2E75B6); padding:24px; border-radius:18px; color:white; text-align:center; margin-bottom:18px;}
+    .metric-card {background:white; border:1px solid #E1E6EF; border-radius:14px; padding:16px; box-shadow:0 3px 12px rgba(0,0,0,.04);}
+    .note {background:#F2F7FF; border-left:5px solid #2E75B6; padding:12px 14px; border-radius:8px;}
+    .warn {background:#FFF8E1; border-left:5px solid #FFB000; padding:12px 14px; border-radius:8px;}
+    .success {background:#ECF8EF; border-left:5px solid #00A651; padding:12px 14px; border-radius:8px;}
     </style>
     """, unsafe_allow_html=True)
 
@@ -1371,79 +1206,54 @@ def page_overview(st: Any, go: Any, pd: Any, graph: WaselGraph, blocked: List[Tu
     st.markdown("""
     <div class="hero">
       <h1>🚚 WaselX Express</h1>
-      <p>Professional-grade Data Structures & Algorithms prototype for UAE last-mile delivery optimization. The app connects each implementation to a measurable business problem: route waste, dispatch latency, and support lookup delay.</p>
+      <p>Professional Data Structures & Algorithms Prototype for UAE Last-Mile Delivery Optimization</p>
     </div>
     """, unsafe_allow_html=True)
     cols = st.columns(4)
-    metrics = [
-        ("15", "Network nodes", "7 hubs + 8 zones", "🗺️", "primary"),
-        ("24", "Road edges", "Weighted by distance/time/cost", "🛣️", "primary"),
-        ("3,500", "Daily orders", "Scales to 15,000 in analysis", "📦", "ok"),
-        ("10+", "Interactive simulations", "Presenter-ready walkthroughs", "🎬", "ok"),
-    ]
-    for col, (value, label, detail, icon, tone) in zip(cols, metrics):
-        col.markdown(metric_card_html(value, label, detail, icon, tone), unsafe_allow_html=True)
+    metrics = [("15", "Network Nodes"), ("24", "Road Edges"), ("3,500", "Daily Orders"), ("5", "Task Areas")]
+    for col, (value, label) in zip(cols, metrics):
+        col.markdown(f"<div class='metric-card'><h2>{value}</h2><p>{label}</p></div>", unsafe_allow_html=True)
+    st.plotly_chart(network_figure(go, graph, "WaselX UAE Operating Network", blocked_edges=blocked), use_container_width=True)
+    c1, c2 = st.columns(2)
+    with c1:
+        st.subheader("Business Problems")
+        st.table(pd.DataFrame([
+            ["Inefficient routes", "23% extra rider distance", "Dijkstra + path simulator"],
+            ["Slow dispatch", "8-minute manual sorting delay", "From-scratch min-heap priority queue"],
+            ["Poor lookup", "45-second support lookup", "AVL tree order index"],
+        ], columns=["Challenge", "Impact", "DSA Solution"]))
+    with c2:
+        st.subheader("Readiness Notes")
+        comps = graph.connected_components()
+        if len(comps) > 1:
+            st.markdown(f"<div class='warn'><b>Important:</b> The supplied network is disconnected into {len(comps)} components. Routing from Dubai/Sharjah/Ajman to Abu Dhabi is impossible unless a new inter-emirate edge is added.</div>", unsafe_allow_html=True)
+        st.markdown("<div class='success'>The cleaned prototype removes unused dependencies, fixes path simulator errors, uses custom heap/queue structures, and handles road closures safely.</div>", unsafe_allow_html=True)
 
-    st.markdown(section_header_html("Operating network", "Clean executive view of the supplied 15-node, 24-edge WaselX operating graph."), unsafe_allow_html=True)
-    st.plotly_chart(network_figure(go, graph, "WaselX UAE Operating Network", blocked_edges=blocked, show_edge_labels=True), use_container_width=True)
-
-    st.markdown(section_header_html("Implementation coverage", "Expanded coverage matrix for readability and submission-grade traceability."), unsafe_allow_html=True)
-    coverage = pd.DataFrame([
-        ["A", "Graph modelling + route optimization", "Adjacency list/matrix, Dijkstra, Floyd-Warshall, BFS/DFS, Kruskal, Prim", "Route optimization, path simulation, network analytics, spanning forest", "Complete"],
-        ["B", "Tree-based order indexing", "BST build/traversal/search/delete, AVL build and rotation cases", "Lookup efficiency, balance logic, deletion and traversal outputs", "Complete"],
-        ["C", "Operational pipeline structures", "Doubly linked list, circular rider list, custom min-heap priority queue, stack undo", "Dispatch pipeline simulations and state transitions", "Complete"],
-        ["D", "Sorting, searching, divide-and-conquer", "Merge sort, quick sort, binary/linear search, peak-hour detection", "Manifest sorting, lookup comparison, Ramadan demand analytics", "Complete"],
-        ["E", "Management + implementation linkage", "Business logic, decision framing, report narrative alignment", "Submission-ready analytical storyline for the written proposal", "Report-linked"],
-    ], columns=["Area", "Assignment focus", "Core algorithms / structures", "What the dashboard demonstrates", "Status"])
-    st.dataframe(coverage, use_container_width=True, hide_index=True)
-
-    st.markdown(section_header_html("Business problem → DSA response", kicker="Consulting narrative"), unsafe_allow_html=True)
-    st.dataframe(pd.DataFrame([
-        ["Inefficient delivery routes", "23% extra rider distance and fuel waste", "Dijkstra shortest path + route comparison + road-closure rerouting", "Lower distance, time, and route cost"],
-        ["Slow dispatch prioritization", "8-minute manual sorting delay at hubs", "Custom min-heap priority queue with FIFO tie-breaking", "Faster dispatch sequencing for urgent orders"],
-        ["Poor support lookup", "45-second average search time for order status", "BST and AVL indexing", "Faster lookup and better scalability"],
-    ], columns=["Challenge", "Operational impact", "Dashboard solution", "Expected business value"]), use_container_width=True, hide_index=True)
-    st.markdown("<div class='footer'>WaselX Express MAIB DSA prototype — final_cleaned.py is the single source of truth for the dashboard.</div>", unsafe_allow_html=True)
 
 def page_network(st: Any, go: Any, pd: Any, graph: WaselGraph, blocked: List[Tuple[str, str]]) -> None:
-    st.markdown(section_header_html("Network Explorer", "Graph representation, weighted adjacency structures, and connectivity diagnostics for the WaselX road network.", "Task Area A / Q1 + Q7"), unsafe_allow_html=True)
-    tab1, tab2, tab3, tab4 = st.tabs(["🗺️ Executive map", "📋 Adjacency list", "🧮 Adjacency matrix", "🔌 Connectivity"])
+    st.title("Network Explorer")
+    tab1, tab2, tab3, tab4 = st.tabs(["Map", "Adjacency List", "Adjacency Matrix", "Connectivity"])
     with tab1:
-        left, right = st.columns([3, 1])
-        with right:
-            node = st.selectbox("Highlight node", ["None"] + graph.nodes)
-            show_labels = st.toggle("Show all road labels", value=False)
-            if node != "None":
-                name, kind, emirate, orders, lat, lon = NODE_INFO[node]
-                st.markdown(metric_card_html(str(orders), "Daily orders", f"{name} · {kind} · {emirate}", "📍", "primary"), unsafe_allow_html=True)
-                st.write("Connected roads:")
-                st.dataframe(pd.DataFrame([
-                    {"To": e.target, "Road": e.road, "Km": e.distance, "Min": e.time, "AED": e.cost}
-                    for e in graph.neighbors(node)
-                ]), use_container_width=True, hide_index=True)
-        with left:
-            path = [node] if node != "None" else []
-            st.plotly_chart(network_figure(go, graph, "Professional network map", highlight_path=path, blocked_edges=blocked, show_edge_labels=show_labels), use_container_width=True)
+        node = st.selectbox("Highlight node", ["None"] + graph.nodes)
+        path = [node] if node != "None" else []
+        st.plotly_chart(network_figure(go, graph, "Network Map", highlight_path=path, blocked_edges=blocked), use_container_width=True)
     with tab2:
-        st.markdown("<div class='note'><b>Why this matters:</b> The adjacency list is preferred for sparse routing because algorithms scan actual neighbors instead of mostly empty matrix cells.</div>", unsafe_allow_html=True)
         st.dataframe(pd.DataFrame(graph.adjacency_list_rows()), use_container_width=True, hide_index=True)
     with tab3:
         criterion = st.selectbox("Weight", ["distance", "time", "cost"], key="matrix_weight")
         st.dataframe(matrix_to_dataframe(pd, graph.nodes, graph.adjacency_matrix(criterion)), use_container_width=True)
-        st.caption("INF means no direct road segment exists between the two locations. The matrix shown is the full 15-node representation required for Q1.")
+        st.caption("INF means no direct road segment exists between the two locations.")
     with tab4:
         comps = graph.connected_components()
-        cols = st.columns(3)
-        cols[0].markdown(metric_card_html(str(len(comps)), "Connected components", "Supplied graph structure", "🔌", "warn" if len(comps) > 1 else "ok"), unsafe_allow_html=True)
-        cols[1].markdown(metric_card_html(str(len(comps[0]) if comps else 0), "Largest component", "Dubai/Sharjah/Ajman cluster", "🏙️", "primary"), unsafe_allow_html=True)
-        cols[2].markdown(metric_card_html(str(len(graph.nodes)), "Total nodes", "All hubs and zones", "📍", "primary"), unsafe_allow_html=True)
+        st.write(f"Connected components: {len(comps)}")
         for i, comp in enumerate(comps, start=1):
             st.markdown(f"**Component {i}:** {', '.join(comp)}")
         if len(comps) > 1:
-            st.warning("This is a material project finding: H5/H6/D6/D7 are isolated from the Dubai-Sharjah-Ajman component in the supplied edge table. The app now treats such routes as unreachable instead of forcing fake paths.")
+            st.warning("This matters for Q6/Q7/Q4: H5/H6/D6/D7 are isolated from the Dubai-Sharjah-Ajman component in the given edge table.")
+
 
 def page_pathfinder(st: Any, go: Any, pd: Any, graph: WaselGraph, blocked: List[Tuple[str, str]]) -> None:
-    st.markdown(section_header_html("Dijkstra Path Simulator", "Separate static route visualization from animation so the optimum path remains clear and presentation-ready.", "Task Area A / Q2 + Q6 + Q27"), unsafe_allow_html=True)
+    st.title("Dijkstra Path Simulator")
     c1, c2, c3 = st.columns(3)
     with c1:
         source = st.selectbox("Source", graph.nodes, index=0)
@@ -1454,58 +1264,23 @@ def page_pathfinder(st: Any, go: Any, pd: Any, graph: WaselGraph, blocked: List[
 
     result = graph.dijkstra(source, destination, criterion)
     metrics = result["metrics"]
+    st.plotly_chart(network_figure(go, graph, f"Optimal path by {criterion}: {path_to_string(result['path'])}", result["path"], blocked_edges=blocked), use_container_width=True)
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Path", path_to_string(result["path"]))
+    m2.metric("Distance", f"{format_number(metrics['distance'])} km")
+    m3.metric("Time", f"{format_number(metrics['time'])} min")
+    m4.metric("Cost", f"AED {format_number(metrics['cost'])}")
 
-    st.markdown(section_header_html("Static optimal route view", "Clean labelled route map for the final optimum path."), unsafe_allow_html=True)
-    st.plotly_chart(network_figure(go, graph, f"Optimal path by {criterion}: {path_to_string(result['path'])}", result["path"], blocked_edges=blocked, primary_label=f"Optimal by {criterion}", show_edge_labels=True, cluster_labels=True), use_container_width=True)
-    cols = st.columns(4)
-    cols[0].markdown(metric_card_html(path_to_string(result["path"]), "Optimal path", "Unreachable if no connected route exists", "🧭", "primary"), unsafe_allow_html=True)
-    cols[1].markdown(metric_card_html(f"{format_number(metrics['distance'])} km", "Distance", "Total route length", "📏", "primary"), unsafe_allow_html=True)
-    cols[2].markdown(metric_card_html(f"{format_number(metrics['time'])} min", "Travel time", "Weighted by minutes", "⏱️", "primary"), unsafe_allow_html=True)
-    cols[3].markdown(metric_card_html(f"AED {format_number(metrics['cost'])}", "Segment cost", "Fuel + wear proxy", "💰", "ok"), unsafe_allow_html=True)
-
-    tabs = st.tabs(["🎬 Route animation", "⚖️ All criteria", "🛣️ Dual path visualization", "🚧 Road closure comparison"])
+    tabs = st.tabs(["Step Trace", "All Criteria", "Road Closure Comparison"])
     with tabs[0]:
-        trace_rows = [{
-            "Step": row["step"], "Action": row["action"], "Current": row.get("current", "-"), "Visited": ", ".join(row.get("visited", []))
-        } for row in result["trace"]]
-        col_left, col_right = st.columns([2, 1])
-        with col_right:
-            step_idx = st.slider("Review Dijkstra step", 0, len(result["trace"]) - 1, len(result["trace"]) - 1)
-            autoplay = st.button("▶ Play Dijkstra animation")
-            st.dataframe(pd.DataFrame(trace_rows), use_container_width=True, hide_index=True)
-        fig_slot = col_left.empty()
-        note_slot = col_left.empty()
-
-        def draw_dijkstra_step(i: int) -> None:
-            row = result["trace"][i]
-            current_node = row.get("current") or source
-            partial_path = reconstruct_path(row.get("previous", {}), source, current_node) if row.get("previous") else ([source] if current_node == source else [])
-            if i == len(result["trace"]) - 1:
-                partial_path = result["path"]
-            fig_slot.plotly_chart(network_figure(
-                go, graph, f"Dijkstra animation — step {row['step']}",
-                highlight_path=partial_path,
-                blocked_edges=blocked,
-                visited=row.get("visited", []),
-                current=current_node,
-                temporary_edge=row.get("relaxed_edge"),
-                show_edge_labels=False,
-                cluster_labels=False,
-                primary_label="Highlighted traversal path",
-            ), use_container_width=True)
-            note_slot.markdown(
-                f"<div class='route-card route-primary'><div class='route-card-title'>Animation detail</div>"
-                f"<div><b>Current node:</b> {current_node}<br><b>Action:</b> {row['action']}<br>"
-                f"<b>Highlighted path:</b> {path_to_string(partial_path)}<br><b>Visited set:</b> {', '.join(row.get('visited', [])) or '-'}</div></div>",
-                unsafe_allow_html=True,
-            )
-
-        if autoplay:
-            for i in range(len(result["trace"])):
-                draw_dijkstra_step(i)
-                time.sleep(st.session_state.get("anim_speed", 0.45))
-        else:
-            draw_dijkstra_step(step_idx)
+        trace_rows = []
+        for row in result["trace"]:
+            trace_rows.append({
+                "Step": row["step"],
+                "Action": row["action"],
+                "Visited": ", ".join(row.get("visited", [])),
+            })
+        st.dataframe(pd.DataFrame(trace_rows), use_container_width=True, hide_index=True)
     with tabs[1]:
         rows = []
         for crit in ["distance", "time", "cost"]:
@@ -1513,25 +1288,7 @@ def page_pathfinder(st: Any, go: Any, pd: Any, graph: WaselGraph, blocked: List[
             met = r["metrics"]
             rows.append({"Criterion": crit, "Path": path_to_string(r["path"]), "Distance": met["distance"], "Time": met["time"], "Cost": met["cost"]})
         st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
-        st.info("This view supports the consulting recommendation: Dijkstra can be rerun quickly for different business priorities without recomputing all pairs.")
     with tabs[2]:
-        st.markdown("Compare two source-destination pairs on the same professional network map, as required by Q6(d).")
-        a, b, c, d = st.columns(4)
-        with a:
-            s1 = st.selectbox("Pair 1 source", graph.nodes, index=0, key="dual_s1")
-        with b:
-            t1 = st.selectbox("Pair 1 destination", graph.nodes, index=graph.nodes.index("D4"), key="dual_t1")
-        with c:
-            s2 = st.selectbox("Pair 2 source", graph.nodes, index=graph.nodes.index("H7"), key="dual_s2")
-        with d:
-            t2 = st.selectbox("Pair 2 destination", graph.nodes, index=graph.nodes.index("D3"), key="dual_t2")
-        r1 = graph.dijkstra(s1, t1, criterion)
-        r2 = graph.dijkstra(s2, t2, criterion)
-        st.plotly_chart(network_figure(go, graph, "Dual route comparison", r1["path"], blocked_edges=blocked, secondary_path=r2["path"], primary_label=f"{s1}→{t1}", secondary_label=f"{s2}→{t2}", show_edge_labels=True), use_container_width=True)
-        left, right = st.columns(2)
-        left.markdown(route_card_html(f"Pair 1: {s1} → {t1}", r1["path"], r1["metrics"], "primary"), unsafe_allow_html=True)
-        right.markdown(route_card_html(f"Pair 2: {s2} → {t2}", r2["path"], r2["metrics"], "secondary"), unsafe_allow_html=True)
-    with tabs[3]:
         edge_labels = {f"{u}-{v} ({road})": (u, v) for u, v, road, *_ in EDGES}
         selected = st.selectbox("Temporarily block one road", ["None"] + list(edge_labels.keys()))
         if selected == "None":
@@ -1543,21 +1300,22 @@ def page_pathfinder(st: Any, go: Any, pd: Any, graph: WaselGraph, blocked: List[
             rerouted = closure_graph.dijkstra(source, destination, criterion)
             left, right = st.columns(2)
             with left:
-                st.plotly_chart(network_figure(go, graph, "Original route", original["path"], blocked_edges=blocked, primary_label="Original", show_edge_labels=True), use_container_width=True)
-                st.markdown(route_card_html("Original", original["path"], original["metrics"], "primary"), unsafe_allow_html=True)
+                st.plotly_chart(network_figure(go, graph, "Original", original["path"], blocked_edges=blocked), use_container_width=True)
+                st.write(path_to_string(original["path"]))
             with right:
-                st.plotly_chart(network_figure(go, closure_graph, "Rerouted after closure", rerouted["path"], blocked_edges=list(blocked)+closure, primary_label="Rerouted", show_edge_labels=True), use_container_width=True)
-                st.markdown(route_card_html("Rerouted", rerouted["path"], rerouted["metrics"], "secondary"), unsafe_allow_html=True)
+                st.plotly_chart(network_figure(go, closure_graph, "Rerouted", rerouted["path"], blocked_edges=list(blocked)+closure), use_container_width=True)
+                st.write(path_to_string(rerouted["path"]))
             o, r = original["metrics"], rerouted["metrics"]
             comparison = pd.DataFrame([
                 ["Original", path_to_string(original["path"]), o["distance"], o["time"], o["cost"]],
                 ["Rerouted", path_to_string(rerouted["path"]), r["distance"], r["time"], r["cost"]],
-                ["Delta", "", format_delta(r["distance"], o["distance"], " km"), format_delta(r["time"], o["time"], " min"), format_delta(r["cost"], o["cost"], " AED")],
+                ["Delta", "", r["distance"]-o["distance"] if not isinf(r["distance"]) else INF, r["time"]-o["time"] if not isinf(r["time"]) else INF, r["cost"]-o["cost"] if not isinf(r["cost"]) else INF],
             ], columns=["Case", "Path", "Distance", "Time", "Cost"])
             st.dataframe(comparison, use_container_width=True, hide_index=True)
 
+
 def page_floyd(st: Any, go: Any, pd: Any, graph: WaselGraph) -> None:
-    st.markdown(section_header_html("Floyd-Warshall All-Pairs Shortest Paths", "Offline all-pairs route intelligence for hub transfer decisions and proposed corridor analysis.", "Task Area A / Q3"), unsafe_allow_html=True)
+    st.title("Floyd-Warshall All-Pairs Shortest Paths")
     criterion = st.selectbox("Weight", ["time", "distance", "cost"], key="fw_weight")
     scope = st.radio("Scope", ["Hubs only (H1-H7)", "All nodes"], horizontal=True)
     nodes = [n for n in graph.nodes if n.startswith("H")] if scope.startswith("Hubs") else graph.nodes
@@ -1602,122 +1360,47 @@ def page_floyd(st: Any, go: Any, pd: Any, graph: WaselGraph) -> None:
 
 
 def page_traversal(st: Any, go: Any, pd: Any, graph: WaselGraph, blocked: List[Tuple[str, str]]) -> None:
-    st.markdown(section_header_html("BFS and DFS Traversal", "Reachability and fewest-stop reasoning from the Deira hub default start node.", "Task Area A / Q7"), unsafe_allow_html=True)
+    st.title("BFS and DFS Traversal")
     start = st.selectbox("Start node", graph.nodes, index=graph.nodes.index("H3"))
     bfs_result = graph.bfs(start)
     dfs_result = graph.dfs(start)
-    tab1, tab2 = st.tabs(["🎬 BFS simulator", "🎬 DFS simulator"])
-    with tab1:
-        left, right = st.columns([2, 1])
-        bfs_step = right.slider("BFS step", 0, len(bfs_result["trace"]) - 1, len(bfs_result["trace"]) - 1)
-        bfs_play = right.button("▶ Play BFS animation")
-        fig_slot = left.empty()
-        info_slot = left.empty()
-        def draw_bfs(i: int) -> None:
-            row = bfs_result["trace"][i]
-            fig_slot.plotly_chart(network_figure(go, graph, f"BFS step {i+1}: visit {row['current']}", visited=row["visited"], current=row["current"], blocked_edges=blocked, show_edge_labels=False), use_container_width=True)
-            info_slot.markdown(f"<div class='route-card'><div class='route-card-title'>BFS queue state</div><div><b>Visited:</b> {' → '.join(row['visited'])}<br><b>Added this step:</b> {', '.join(row['added']) or '-'}<br><b>Queue:</b> {', '.join(row['queue']) or 'Empty'}</div></div>", unsafe_allow_html=True)
-        if bfs_play:
-            for i in range(len(bfs_result["trace"])):
-                draw_bfs(i)
-                time.sleep(st.session_state.get("anim_speed", 0.55))
-        else:
-            draw_bfs(bfs_step)
-        right.dataframe(pd.DataFrame([{"Node": k, "Parent": v or "-"} for k, v in bfs_result["parent"].items()]), hide_index=True, use_container_width=True)
-    with tab2:
-        left, right = st.columns([2, 1])
-        dfs_step = right.slider("DFS step", 1, len(dfs_result["order"]), len(dfs_result["order"]))
-        dfs_play = right.button("▶ Play DFS animation")
-        fig_slot = left.empty()
-        info_slot = left.empty()
-        def draw_dfs(i: int) -> None:
-            visited = dfs_result["order"][:i]
-            current = visited[-1] if visited else None
-            fig_slot.plotly_chart(network_figure(go, graph, f"DFS animation — {i} step(s)", visited=visited, current=current, blocked_edges=blocked, show_edge_labels=False, cluster_labels=False), use_container_width=True)
-            info_slot.markdown(f"<div class='route-card'><div class='route-card-title'>DFS progress</div><div><b>Visited order:</b> {' → '.join(visited) or '-'}<br><b>Current node:</b> {current or '-'}</div></div>", unsafe_allow_html=True)
-        if dfs_play:
-            for i in range(1, len(dfs_result["order"]) + 1):
-                draw_dfs(i)
-                time.sleep(st.session_state.get("anim_speed", 0.55))
-        else:
-            draw_dfs(dfs_step)
-        right.dataframe(pd.DataFrame([{"Node": k, "Parent": v or "-"} for k, v in dfs_result["parent"].items()]), hide_index=True, use_container_width=True)
+    c1, c2 = st.columns(2)
+    with c1:
+        st.subheader("BFS")
+        st.plotly_chart(network_figure(go, graph, "BFS Reachability", visited=bfs_result["order"], current=start, blocked_edges=blocked), use_container_width=True)
+        st.write(" -> ".join(bfs_result["order"]))
+        st.dataframe(pd.DataFrame([{"Node": k, "Parent": v or "-"} for k, v in bfs_result["parent"].items()]), hide_index=True)
+    with c2:
+        st.subheader("DFS")
+        st.write(" -> ".join(dfs_result["order"]))
+        st.dataframe(pd.DataFrame([{"Node": k, "Parent": v or "-"} for k, v in dfs_result["parent"].items()]), hide_index=True)
     if not bfs_result["reachable_all"]:
         st.warning(f"Starting from {start}, only {len(bfs_result['order'])} of {len(graph.nodes)} nodes are reachable. This is a key finding for Q7.")
 
+
 def page_mst(st: Any, go: Any, pd: Any, graph: WaselGraph, blocked: List[Tuple[str, str]]) -> None:
-    st.markdown(section_header_html("Minimum Spanning Tree / Forest", "Cost-minimizing tracking-network design using Kruskal and Prim while respecting the supplied disconnected graph.", "Task Area A / Q4"), unsafe_allow_html=True)
+    st.title("Minimum Spanning Tree / Forest")
     result = graph.kruskal_mst()
-    st.plotly_chart(network_figure(go, graph, "Kruskal Minimum Spanning Forest", mst_edges=result["edges"], blocked_edges=blocked, show_edge_labels=True), use_container_width=True)
+    st.plotly_chart(network_figure(go, graph, "Kruskal Minimum Spanning Forest", mst_edges=result["edges"], blocked_edges=blocked), use_container_width=True)
     c1, c2, c3 = st.columns(3)
     c1.metric("Selected edges", len(result["edges"]))
     c2.metric("Total cost", f"AED {result['total']:.1f}K")
     c3.metric("Components", len(result["components"]))
     if not result["is_spanning_tree"]:
         st.warning("Because the provided graph is disconnected, the mathematically correct output is a Minimum Spanning Forest. A true MST over all 15 nodes would require at least one new bridge edge between components.")
-    tab1, tab2 = st.tabs(["🎬 Kruskal trace", "🎬 Prim from H2"])
-    edge_lookup = {normalized_edge(e.source, e.target): e for e in graph.edges}
+    tab1, tab2 = st.tabs(["Kruskal Trace", "Prim from H2"])
     with tab1:
-        left, right = st.columns([2, 1])
-        step = right.slider("Kruskal step", 1, len(result["trace"]), len(result["trace"]))
-        play = right.button("▶ Play Kruskal animation")
-        fig_slot = left.empty()
-        info_slot = left.empty()
-        def draw_kruskal(i: int) -> None:
-            rows = result["trace"][:i]
-            chosen = []
-            current_edge = None
-            for row in rows:
-                u, v = row["edge"].split("-")
-                current_edge = (u, v)
-                if row["action"] == "ADDED":
-                    edge = edge_lookup.get(normalized_edge(u, v))
-                    if edge:
-                        chosen.append(edge)
-            row = rows[-1]
-            fig_slot.plotly_chart(network_figure(go, graph, f"Kruskal animation — step {i}", mst_edges=chosen, blocked_edges=blocked, show_edge_labels=False, temporary_edge=current_edge, cluster_labels=False), use_container_width=True)
-            info_slot.markdown(f"<div class='route-card'><div class='route-card-title'>Current decision</div><div><b>Edge:</b> {row['edge']}<br><b>Action:</b> {row['action']}<br><b>Reason:</b> {row['reason']}<br><b>Running total:</b> AED {row['running_total']:.1f}K</div></div>", unsafe_allow_html=True)
-        if play:
-            for i in range(1, len(result["trace"]) + 1):
-                draw_kruskal(i)
-                time.sleep(st.session_state.get("anim_speed", 0.55))
-        else:
-            draw_kruskal(step)
-        right.dataframe(pd.DataFrame(result["trace"]), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(result["trace"]), use_container_width=True, hide_index=True)
     with tab2:
-        start_node = st.selectbox("Start", graph.nodes, index=graph.nodes.index("H2"), key="prim_start")
-        prim = graph.prim_mst(start_node)
-        left, right = st.columns([2, 1])
-        step = right.slider("Prim step", 1, max(1, len(prim["trace"])), max(1, len(prim["trace"])))
-        play = right.button("▶ Play Prim animation")
-        fig_slot = left.empty()
-        info_slot = left.empty()
-        def draw_prim(i: int) -> None:
-            rows = prim["trace"][:i]
-            chosen = []
-            current_edge = None
-            for row in rows:
-                u, v = row["edge"].split("-")
-                current_edge = (u, v)
-                edge = edge_lookup.get(normalized_edge(u, v))
-                if edge:
-                    chosen.append(edge)
-            row = rows[-1]
-            fig_slot.plotly_chart(network_figure(go, graph, f"Prim animation — step {i}", mst_edges=chosen, blocked_edges=blocked, show_edge_labels=False, temporary_edge=current_edge, cluster_labels=False), use_container_width=True)
-            info_slot.markdown(f"<div class='route-card'><div class='route-card-title'>Prim growth</div><div><b>Edge added:</b> {row['edge']}<br><b>Road:</b> {row['road']}<br><b>Running total:</b> AED {row['running_total']:.1f}K</div></div>", unsafe_allow_html=True)
-        if prim["trace"]:
-            if play:
-                for i in range(1, len(prim["trace"]) + 1):
-                    draw_prim(i)
-                    time.sleep(st.session_state.get("anim_speed", 0.55))
-            else:
-                draw_prim(step)
-        right.dataframe(pd.DataFrame(prim["trace"]), use_container_width=True, hide_index=True)
+        start = st.selectbox("Start", graph.nodes, index=graph.nodes.index("H2"), key="prim_start")
+        prim = graph.prim_mst(start)
+        st.dataframe(pd.DataFrame(prim["trace"]), use_container_width=True, hide_index=True)
         if not prim["is_complete"]:
-            st.info(f"Prim starting at {start_node} covers {len(prim['visited'])} nodes in its connected component. Run Kruskal for the full spanning forest across disconnected components.")
+            st.info(f"Prim starting at {start} covers {len(prim['visited'])} nodes in its connected component. Run Kruskal for the full spanning forest across disconnected components.")
+
 
 def page_trees(st: Any, go: Any, pd: Any) -> None:
-    st.markdown(section_header_html("BST and AVL Tree Indexing", "Order lookup structures, traversal outputs, deletion, and AVL balance logic.", "Task Area B / Q8-Q11"), unsafe_allow_html=True)
+    st.title("BST and AVL Tree Indexing")
     order_ids = [1045, 1023, 1078, 1012, 1034, 1056, 1089, 1005, 1020, 1067, 1050, 1098]
     root = build_bst(order_ids)
     avl_root, rotations = build_avl(order_ids)
@@ -1756,170 +1439,98 @@ def page_trees(st: Any, go: Any, pd: Any) -> None:
 
 
 def page_pipeline(st: Any, pd: Any) -> None:
-    st.markdown(section_header_html("Order Pipeline Data Structures", "Professional simulations for route mutation, rotating rider assignment, priority dispatch, and lifecycle undo.", "Task Area C / Q12-Q15"), unsafe_allow_html=True)
-    tab1, tab2, tab3, tab4 = st.tabs(["🎬 Doubly linked route", "🎬 Circular rider list", "🎬 Priority queue", "🎬 Stack lifecycle"])
+    st.title("Linked Lists, Priority Queue, and Stack")
+    tab1, tab2, tab3, tab4 = st.tabs(["Doubly Linked List", "Circular Linked List", "Priority Queue", "Stack"])
     with tab1:
-        stages = []
         route = DoublyLinkedList()
         for stop in [("Dubai Marina Hub", "ORD001", "10:15"), ("JLT", "ORD002", "10:30"), ("Downtown Dubai", "ORD003", "10:50"), ("Business Bay", "ORD004", "11:05"), ("Deira", "ORD005", "11:25"), ("Silicon Oasis", "ORD006", "11:50")]:
             route.append(*stop)
-        stages.append(("Initial route", route.display_forward(), "Original 6-stop delivery plan"))
+        before = route.display_forward()
         route.insert_after("ORD003", "Al Quoz (Urgent)", "ORD_URGENT", "10:55")
-        stages.append(("Urgent insertion", route.display_forward(), "New urgent stop inserted after ORD003"))
+        after_insert = route.display_forward()
         route.delete_by_order_id("ORD005")
-        stages.append(("Cancellation complete", route.display_forward(), "Cancelled order ORD005 removed from the route"))
-        left, right = st.columns([2, 1])
-        stage_idx = right.slider("Route stage", 0, len(stages) - 1, len(stages) - 1)
-        play = right.button("▶ Play route simulation")
-        fig = left.empty()
-        def draw_route(i: int) -> None:
-            title, rows, desc = stages[i]
-            fig.markdown(f"<div class='route-card route-primary'><div class='route-card-title'>{title}</div><div>{desc}</div></div>", unsafe_allow_html=True)
-            left.dataframe(route_to_dataframe(pd, rows), use_container_width=True, hide_index=True)
-        if play:
-            for i in range(len(stages)):
-                draw_route(i)
-                time.sleep(st.session_state.get("anim_speed", 0.55))
-        else:
-            draw_route(stage_idx)
-        right.markdown("<div class='note'><b>Backed by a real DoublyLinkedList class:</b> insertion and deletion relink nodes instead of using Python list insert/pop operations.</div>", unsafe_allow_html=True)
+        after_delete = route.display_forward()
+        st.write("Before:", before)
+        st.write("After urgent insertion:", after_insert)
+        st.write("After cancellation:", after_delete)
     with tab2:
         riders = CircularLinkedList()
         for i in range(1, 9):
             riders.add_rider(f"Rider {i}")
         assignments = []
-        rosters = []
         for order in range(1, 12):
-            assignments.append((order, riders.assign_next_order(), "Before break"))
-            rosters.append((order, list(riders.display_roster())))
+            assignments.append((order, riders.assign_next_order()))
         riders.remove_rider("Rider 4")
         for order in range(12, 21):
-            assignments.append((order, riders.assign_next_order(), "After Rider 4 break"))
-            rosters.append((order, list(riders.display_roster())))
-        left, right = st.columns([2, 1])
-        step = right.slider("Assignment step", 1, len(assignments), len(assignments))
-        play = right.button("▶ Play rider rotation")
-        table_slot = left.empty()
-        note_slot = left.empty()
-        def draw_assign(i: int) -> None:
-            partial = assignments[:i]
-            current = partial[-1]
-            table_slot.dataframe(pd.DataFrame(partial, columns=["Order", "Assigned Rider", "Phase"]), use_container_width=True, hide_index=True)
-            roster = rosters[i-1][1]
-            note_slot.markdown(f"<div class='route-card'><div class='route-card-title'>Current assignment</div><div><b>Order:</b> {current[0]}<br><b>Assigned rider:</b> {current[1]}<br><b>Roster:</b> {', '.join(roster)}</div></div>", unsafe_allow_html=True)
-        if play:
-            for i in range(1, len(assignments)+1):
-                draw_assign(i)
-                time.sleep(st.session_state.get("anim_speed", 0.45))
-        else:
-            draw_assign(step)
+            assignments.append((order, riders.assign_next_order()))
+        st.dataframe(pd.DataFrame(assignments, columns=["Order", "Assigned Rider"]), hide_index=True)
+        st.write("Current roster:", riders.display_roster())
     with tab3:
         orders = [("Order A", 3), ("Order B", 1), ("Order C", 4), ("Order D", 2), ("Order E", 1), ("Order F", 5), ("Order G", 2), ("Order H", 3), ("Order I", 1), ("Order J", 4)]
         pq = MinHeap()
-        snapshots = []
         for name, priority in orders:
             pq.push(priority, name)
-            queue_view = [(item[2], item[0], item[1] + 1) for item in pq.display()]
-            snapshots.append((f"Enqueue {name}", queue_view.copy()))
+        dequeued = []
         while pq:
-            popped = pq.pop()
-            queue_view = [(item[2], item[0], item[1] + 1) for item in pq.display()]
-            snapshots.append((f"Dequeue {popped[2]}", queue_view.copy()))
-        left, right = st.columns([2, 1])
-        step = right.slider("Heap simulation step", 1, len(snapshots), len(snapshots))
-        play = right.button("▶ Play heap simulation")
-        table_slot = left.empty()
-        note_slot = left.empty()
-        def draw_heap(i: int) -> None:
-            action, queue_view = snapshots[i-1]
-            table_slot.dataframe(pd.DataFrame(queue_view, columns=["Order", "Priority", "Arrival #"]), use_container_width=True, hide_index=True)
-            note_slot.markdown(f"<div class='route-card'><div class='route-card-title'>Heap state</div><div><b>Action:</b> {action}<br><b>Items currently in heap:</b> {len(queue_view)}</div></div>", unsafe_allow_html=True)
-        if play:
-            for i in range(1, len(snapshots)+1):
-                draw_heap(i)
-                time.sleep(st.session_state.get("anim_speed", 0.4))
-        else:
-            draw_heap(step)
-        st.caption("FIFO tie-breaking is preserved by the internal arrival counter in the custom MinHeap implementation.")
+            priority, _, name = pq.pop()[:3]
+            dequeued.append((name, priority))
+        st.dataframe(pd.DataFrame(dequeued, columns=["Order", "Priority"]), hide_index=True)
+        st.caption("FIFO tie-breaking is preserved by an internal arrival counter.")
     with tab4:
         lifecycle = Stack()
-        lifecycle_rows = []
         for status in ["Received", "Confirmed", "Preparing", "Dispatched", "In Transit", "Delivered"]:
             lifecycle.push(status)
-            lifecycle_rows.append((status, " → ".join(lifecycle.display_top_first())))
+        st.write("Delivered order stack (top first):", lifecycle.display_top_first())
         error_demo = Stack()
         for status in ["Received", "Confirmed", "Preparing", "Dispatched"]:
             error_demo.push(status)
         before = error_demo.display_top_first()
         error_demo.pop()
         after = error_demo.display_top_first()
-        left, right = st.columns([2, 1])
-        step = right.slider("Lifecycle step", 1, len(lifecycle_rows), len(lifecycle_rows))
-        play = right.button("▶ Play lifecycle simulation")
-        frame_slot = left.empty()
-        def draw_stack(i: int) -> None:
-            partial = lifecycle_rows[:i]
-            frame_slot.dataframe(pd.DataFrame(partial, columns=["Action pushed", "Stack top → bottom"]), use_container_width=True, hide_index=True)
-        if play:
-            for i in range(1, len(lifecycle_rows)+1):
-                draw_stack(i)
-                time.sleep(st.session_state.get("anim_speed", 0.45))
-        else:
-            draw_stack(step)
-        l, r = st.columns(2)
-        l.markdown(metric_card_html("Dispatched", "Erroneous top status", "Before undo", "⚠️", "warn"), unsafe_allow_html=True)
-        r.markdown(metric_card_html("Preparing", "Restored top status", "After pop() undo", "↩️", "ok"), unsafe_allow_html=True)
-        st.write("Before undo:", before)
-        st.write("After undo:", after)
+        st.write("Undo demo before:", before)
+        st.write("Undo demo after:", after)
+
 
 def page_sorting(st: Any, go: Any, px: Any, pd: Any) -> None:
-    st.markdown(section_header_html("Sorting, Searching, and Divide-and-Conquer", "Manifest sorting, exact Q19 lookup dataset, and peak-hour detection for Ramadan-style load.", "Task Area D / Q18-Q22"), unsafe_allow_html=True)
-    tab1, tab2, tab3 = st.tabs(["🎬 Sort manifest", "🎬 Search order ID", "🎬 Peak hour"])
+    st.title("Sorting, Searching, and Divide-and-Conquer")
+    tab1, tab2, tab3 = st.tabs(["Sort manifest", "Search order ID", "Peak hour"])
     sample = [("JLT",3), ("Deira",1), ("Marina",4), ("JLT",1), ("Deira",2), ("Marina",2), ("Silicon",5), ("Deira",3), ("JLT",2), ("Marina",1), ("Silicon",1), ("Deira",4), ("Silicon",3), ("JLT",5), ("Marina",3)]
     with tab1:
         ms_sorted, ms_count, ms_steps = merge_sort(sample)
         qs_sorted, qs_count, qs_steps = quick_sort(sample)
-        c1, c2 = st.columns(2)
-        c1.dataframe(pd.DataFrame(ms_sorted, columns=["Zone", "Priority"]), hide_index=True, use_container_width=True)
-        c2.dataframe(pd.DataFrame(qs_sorted, columns=["Zone", "Priority"]), hide_index=True, use_container_width=True)
-        m1, m2 = st.columns(2)
-        m1.metric("Merge comparisons", ms_count)
-        m2.metric("Quick comparisons", qs_count)
+        st.dataframe(pd.DataFrame(ms_sorted, columns=["Zone", "Priority"]), hide_index=True)
+        st.metric("Merge comparisons", ms_count)
+        st.metric("Quick comparisons", qs_count)
         with st.expander("Merge first 3 recursion levels"):
             st.write("\n".join(ms_steps))
         with st.expander("Quick first 2 partition levels"):
             st.write("\n".join(qs_steps))
     with tab2:
         ids = list(range(10001, 11001))
-        target = st.number_input("Order ID", min_value=10001, max_value=11000, value=10347)
+        target = st.number_input("Order ID", min_value=10001, max_value=11000, value=10667)
         b_idx, b_comp, b_trace = binary_search(ids, int(target))
         l_idx, l_comp = linear_search(ids, int(target))
         st.table(pd.DataFrame([["Binary", b_idx, b_comp], ["Linear", l_idx, l_comp]], columns=["Method", "Index", "Comparisons"]))
-        step = st.slider("Binary search step", 1, len(b_trace), len(b_trace))
-        st.dataframe(pd.DataFrame(b_trace[:step], columns=["Low", "Mid", "High", "Mid Value"]), hide_index=True, use_container_width=True)
+        st.dataframe(pd.DataFrame(b_trace, columns=["Low", "Mid", "High", "Mid Value"]), hide_index=True)
     with tab3:
         default_orders = [80, 55, 40, 30, 25, 20, 35, 60, 120, 210, 280, 330, 300, 260, 240, 290, 410, 520, 610, 480, 360, 250, 180, 120]
         top = peak_hour_divide_conquer(default_orders, 3)
-        step = st.slider("Peak-hour reveal", 1, 24, 24)
-        df = pd.DataFrame({"Hour": list(range(24)), "Orders": default_orders})
-        fig = px.bar(df.iloc[:step], x="Hour", y="Orders", title="Ramadan-style hourly order volume")
-        fig.update_layout(height=420, plot_bgcolor="#F8FAFC", paper_bgcolor="rgba(0,0,0,0)")
-        st.plotly_chart(fig, use_container_width=True)
+        st.line_chart(pd.DataFrame({"Hour": list(range(24)), "Orders": default_orders}).set_index("Hour"))
         st.write("Top peak hours:", top)
+
 
 def main() -> None:
     st, go, px, pd = require_ui_libraries()
     style_app(st)
     with st.sidebar:
         st.markdown("## 🚚 WaselX DSA")
-        st.caption("Professional cleaned prototype · Phase 3 UI")
+        st.caption("Professional cleaned prototype")
         section = st.radio("Navigate", [
             "Overview", "Network", "Pathfinder", "Floyd-Warshall", "BFS/DFS", "MST", "BST/AVL", "Pipeline DS", "Sorting/Search/Peak"
         ])
         edge_labels = {f"{u}-{v} ({road})": (u, v) for u, v, road, *_ in EDGES}
         selected = st.multiselect("Global road closures", list(edge_labels.keys()))
         blocked = [edge_labels[label] for label in selected]
-        st.session_state["anim_speed"] = st.slider("Animation speed (sec)", min_value=0.15, max_value=1.20, value=0.45, step=0.05)
         st.markdown("---")
         st.caption("Team: " + " · ".join(TEAM_MEMBERS))
     graph = WaselGraph(blocked_edges=blocked)
